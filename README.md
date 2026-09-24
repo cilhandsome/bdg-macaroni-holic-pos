@@ -1,79 +1,20 @@
 # BDG Macaroni Holic POS
 
-Point of Sale (POS) untuk Macaroni Holic — dirancang sebagai **offline-first web/PWA** untuk kasir, inventory, resep, HPP, laporan, dan multi-outlet.
+Offline-first POS untuk Macaroni Holic.
 
-## Status
+Modul utama: Dashboard, Kasir, Transaksi/Struk, Produk, Bahan Baku, Resep/HPP, Pembelian, Stok, Pengeluaran, Shift, Laporan, Outlet, Pengguna, Backup/Restore, PWA, dan sinkronisasi Supabase.
 
-**Phase 1 — Project Scaffold**
+Teknologi: React + Vite + TypeScript + Dexie + PWA.
 
-Saat ini repository sudah memiliki fondasi React + Vite + TypeScript dan manifest PWA. Modul transaksi, database lokal, sinkronisasi cloud, inventory, resep/HPP, autentikasi, dan multi-outlet akan dibangun bertahap.
+Local development:
+- npm install
+- npm run dev
+- npm run build
 
-## Tech Stack
+Cloud:
+- Jalankan supabase/schema.sql di Supabase SQL Editor.
+- Salin .env.example menjadi .env.local.
+- Isi VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY.
+- Tombol Sync mengirim transaksi lokal yang belum tersinkron.
 
-- React
-- Vite
-- TypeScript
-- PWA
-- IndexedDB / Dexie.js (planned)
-- Supabase PostgreSQL + Auth (planned)
-- GitHub Actions
-- GitHub Pages (deployment target)
-
-## Menjalankan secara lokal
-
-Pastikan Node.js LTS dan npm sudah terpasang.
-
-```bash
-npm install
-npm run dev
-```
-
-Lalu buka URL localhost yang ditampilkan Vite.
-
-Untuk mengecek production build:
-
-```bash
-npm run build
-npm run preview
-```
-
-## Struktur target
-
-```text
-src/
-├── components/
-├── pages/
-├── layouts/
-├── features/
-│   ├── pos/
-│   ├── products/
-│   ├── inventory/
-│   ├── recipes/
-│   ├── purchases/
-│   ├── shifts/
-│   ├── reports/
-│   └── settings/
-├── db/
-├── services/
-├── hooks/
-├── utils/
-└── types/
-```
-
-## Deployment
-
-Deployment target menggunakan GitHub Actions + GitHub Pages. Workflow berada di:
-
-```text
-.github/workflows/deploy.yml
-```
-
-Untuk repository project yang dipublikasikan di bawah path repository, Vite menggunakan base:
-
-```text
-/bdg-macaroni-holic-pos/
-```
-
-## Catatan
-
-Jangan menyimpan secret Supabase, password, API key privat, atau kredensial hardware di source code. Gunakan environment variables untuk nilai rahasia ketika integrasi backend mulai dibuat.
+Backup tersedia melalui Pengaturan.
