@@ -98,7 +98,7 @@ export default function App(){
     const invoice="MH-"+today().replaceAll("-","")+"-"+String(Date.now()).slice(-5); const createdAt=new Date().toISOString();
     try{
       let created:SaleRecord|null=null;
-      await db.transaction("rw",db.products,db.ingredients,db.recipes,db.sales,db.stockMovements,db.syncQueue,async()=>{
+      await db.transaction("rw",[db.products,db.ingredients,db.recipes,db.sales,db.stockMovements,db.syncQueue],async()=>{
         let cogs=0;
         for(const item of cart){
           const p=await db.products.get(item.id); if(!p)throw new Error("Produk tidak ditemukan.");
@@ -193,7 +193,7 @@ export default function App(){
   async function restore(file:File){
     try{
       const p=JSON.parse(await file.text()) as Record<string,unknown[]>;
-      await db.transaction("rw",db.products,db.ingredients,db.recipes,db.suppliers,db.purchases,db.stockMovements,db.sales,db.shifts,db.expenses,db.outlets,db.users,db.auditLogs,db.settings,async()=>{
+      await db.transaction("rw",db.tables,async()=>{
         await Promise.all([db.products.clear(),db.ingredients.clear(),db.recipes.clear(),db.suppliers.clear(),db.purchases.clear(),db.stockMovements.clear(),db.sales.clear(),db.shifts.clear(),db.expenses.clear(),db.outlets.clear(),db.users.clear(),db.auditLogs.clear(),db.settings.clear()]);
         if(p.products)await db.products.bulkAdd(p.products as ProductRecord[]);if(p.ingredients)await db.ingredients.bulkAdd(p.ingredients as IngredientRecord[]);if(p.recipes)await db.recipes.bulkAdd(p.recipes as RecipeRecord[]);
         if(p.suppliers)await db.suppliers.bulkAdd(p.suppliers as SupplierRecord[]);if(p.purchases)await db.purchases.bulkAdd(p.purchases as PurchaseRecord[]);if(p.stockMovements)await db.stockMovements.bulkAdd(p.stockMovements as StockMovementRecord[]);
