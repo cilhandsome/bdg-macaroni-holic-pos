@@ -7,32 +7,47 @@ const users: UserRecord[] = [
 ];
 const suppliers: SupplierRecord[] = [{ id:"supplier-default", name:"Supplier Utama", phone:"", address:"", updatedAt:now() }];
 const products: ProductRecord[] = [
-  { id:"mc-cheese-s",sku:"MH-MC-001-S",name:"Macaroni Cheese S",category:"Macaroni",price:0,stock:0,emoji:"🧀",active:true,trackStock:false,size:"S",updatedAt:now() },
-  { id:"mc-cheese-m",sku:"MH-MC-001-M",name:"Macaroni Cheese M",category:"Macaroni",price:0,stock:0,emoji:"🧀",active:true,trackStock:false,size:"M",updatedAt:now() },
-  { id:"mc-cheese-l",sku:"MH-MC-001-L",name:"Macaroni Cheese L",category:"Macaroni",price:0,stock:0,emoji:"🧀",active:true,trackStock:false,size:"L",updatedAt:now() },
-  { id:"mc-bolognese-s",sku:"MH-MC-002-S",name:"Macaroni Cheese Bolognese S",category:"Macaroni",price:0,stock:0,emoji:"🍝",active:true,trackStock:false,size:"S",updatedAt:now() },
-  { id:"mc-bolognese-m",sku:"MH-MC-002-M",name:"Macaroni Cheese Bolognese M",category:"Macaroni",price:0,stock:0,emoji:"🍝",active:true,trackStock:false,size:"M",updatedAt:now() },
-  { id:"mc-bolognese-l",sku:"MH-MC-002-L",name:"Macaroni Cheese Bolognese L",category:"Macaroni",price:0,stock:0,emoji:"🍝",active:true,trackStock:false,size:"L",updatedAt:now() },
-  { id:"mc-chicken-crispy-s",sku:"MH-MC-003-S",name:"Macaroni Cheese Chicken Crispy S",category:"Macaroni",price:0,stock:0,emoji:"🍗",active:true,trackStock:false,size:"S",updatedAt:now() },
-  { id:"mc-chicken-crispy-m",sku:"MH-MC-003-M",name:"Macaroni Cheese Chicken Crispy M",category:"Macaroni",price:0,stock:0,emoji:"🍗",active:true,trackStock:false,size:"M",updatedAt:now() },
-  { id:"mc-chicken-crispy-l",sku:"MH-MC-003-L",name:"Macaroni Cheese Chicken Crispy L",category:"Macaroni",price:0,stock:0,emoji:"🍗",active:true,trackStock:false,size:"L",updatedAt:now() }
+  { id:"mc-cheese-s",sku:"MH-MC-001-S",name:"Macaroni Cheese S",category:"Macaroni",price:5000,stock:0,emoji:"🧀",active:true,trackStock:false,size:"S",updatedAt:now() },
+  { id:"mc-cheese-m",sku:"MH-MC-001-M",name:"Macaroni Cheese M",category:"Macaroni",price:10000,stock:0,emoji:"🧀",active:true,trackStock:false,size:"M",updatedAt:now() },
+  { id:"mc-cheese-l",sku:"MH-MC-001-L",name:"Macaroni Cheese L",category:"Macaroni",price:15000,stock:0,emoji:"🧀",active:true,trackStock:false,size:"L",updatedAt:now() },
+
+  { id:"mc-bolognese-s",sku:"MH-MC-002-S",name:"Macaroni Cheese Bolognese S",category:"Macaroni",price:5000,stock:0,emoji:"🍝",active:true,trackStock:false,size:"S",updatedAt:now() },
+  { id:"mc-bolognese-m",sku:"MH-MC-002-M",name:"Macaroni Cheese Bolognese M",category:"Macaroni",price:10000,stock:0,emoji:"🍝",active:true,trackStock:false,size:"M",updatedAt:now() },
+  { id:"mc-bolognese-l",sku:"MH-MC-002-L",name:"Macaroni Cheese Bolognese L",category:"Macaroni",price:15000,stock:0,emoji:"🍝",active:true,trackStock:false,size:"L",updatedAt:now() },
+
+  { id:"mc-chicken-crispy-s",sku:"MH-MC-003-S",name:"Macaroni Cheese Chicken Crispy S",category:"Macaroni",price:10000,stock:0,emoji:"🍗",active:true,trackStock:false,size:"S",updatedAt:now() },
+  { id:"mc-chicken-crispy-m",sku:"MH-MC-003-M",name:"Macaroni Cheese Chicken Crispy M",category:"Macaroni",price:15000,stock:0,emoji:"🍗",active:true,trackStock:false,size:"M",updatedAt:now() },
+  { id:"mc-chicken-crispy-l",sku:"MH-MC-003-L",name:"Macaroni Cheese Chicken Crispy L",category:"Macaroni",price:20000,stock:0,emoji:"🍗",active:true,trackStock:false,size:"L",updatedAt:now() },
+
+  { id:"mc-bol-chicken-crispy-s",sku:"MH-MC-004-S",name:"Macaroni Cheese Bolognese Chicken Crispy S",category:"Macaroni",price:10000,stock:0,emoji:"🍝",active:true,trackStock:false,size:"S",updatedAt:now() },
+  { id:"mc-bol-chicken-crispy-m",sku:"MH-MC-004-M",name:"Macaroni Cheese Bolognese Chicken Crispy M",category:"Macaroni",price:15000,stock:0,emoji:"🍝",active:true,trackStock:false,size:"M",updatedAt:now() },
+  { id:"mc-bol-chicken-crispy-l",sku:"MH-MC-004-L",name:"Macaroni Cheese Bolognese Chicken Crispy L",category:"Macaroni",price:20000,stock:0,emoji:"🍝",active:true,trackStock:false,size:"L",updatedAt:now() }
 ];
 const ingredients: IngredientRecord[] = [
-  { id:"ing-macaroni",sku:"ING-001",name:"Macaroni",category:"Bahan utama",unit:"g",stock:15000,minStock:3000,costPerUnit:22,updatedAt:now() },
-  { id:"ing-cheese",sku:"ING-002",name:"Keju",category:"Bahan utama",unit:"g",stock:5000,minStock:1000,costPerUnit:60,updatedAt:now() },
-  { id:"ing-sauce",sku:"ING-003",name:"Saus",category:"Bumbu",unit:"g",stock:6000,minStock:1500,costPerUnit:20,updatedAt:now() },
-  { id:"ing-milk",sku:"ING-004",name:"Susu",category:"Bahan utama",unit:"ml",stock:10000,minStock:2000,costPerUnit:18,updatedAt:now() },
-  { id:"ing-beef",sku:"ING-005",name:"Beef",category:"Protein",unit:"g",stock:5000,minStock:1000,costPerUnit:100,updatedAt:now() },
-  { id:"ing-chicken",sku:"ING-006",name:"Chicken",category:"Protein",unit:"g",stock:5000,minStock:1000,costPerUnit:70,updatedAt:now() },
-  { id:"ing-spicy",sku:"ING-007",name:"Bumbu Pedas",category:"Bumbu",unit:"g",stock:3000,minStock:500,costPerUnit:25,updatedAt:now() },
-  { id:"ing-cup",sku:"ING-008",name:"Cup / Packaging",category:"Packaging",unit:"pcs",stock:500,minStock:100,costPerUnit:800,updatedAt:now() },
-  { id:"ing-spoon",sku:"ING-009",name:"Sendok",category:"Packaging",unit:"pcs",stock:500,minStock:100,costPerUnit:200,updatedAt:now() }
+  { id:"ing-macaroni",sku:"ING-001",name:"Macaroni Special Khas KKI",category:"Bahan utama",unit:"g",packageSize:"800 gr",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
+  { id:"ing-topping-crispy",sku:"ING-002",name:"Tepung Crispy Istimewa",category:"Pelapis",unit:"g",packageSize:"800 gr",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
+  { id:"ing-sauce-bolognese",sku:"ING-003",name:"Saus Bolognese Special KKI",category:"Saus",unit:"g",packageSize:"500 gr",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
+  { id:"ing-cheese",sku:"ING-004",name:"Bubuk Keju Super Khas KKI",category:"Saus",unit:"g",packageSize:"200 gr",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
+  { id:"ing-chili",sku:"ING-005",name:"Saus Chili",category:"Saus",unit:"g",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
+  { id:"ing-mayo",sku:"ING-006",name:"Mayonaise",category:"Saus",unit:"g",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
+  { id:"ing-chicken-fillet",sku:"ING-007",name:"Ayam Fillet",category:"Protein",unit:"g",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
+  { id:"ing-oil",sku:"ING-008",name:"Minyak Goreng",category:"Bahan utama",unit:"ml",packageSize:"1 L",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
+  { id:"ing-parsley",sku:"ING-009",name:"Parsley",category:"Topping",unit:"g",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
+  { id:"ing-packaging",sku:"ING-010",name:"Packaging",category:"Packaging",unit:"pcs",packageSize:"1 pcs",stock:0,minStock:0,costPerUnit:0,updatedAt:now() }
 ];
 const recipes: RecipeRecord[] = [
-  { id:"recipe-mac-cheese",productId:"mac-cheese",items:[{ingredientId:"ing-macaroni",quantity:100,unit:"g"},{ingredientId:"ing-cheese",quantity:30,unit:"g"},{ingredientId:"ing-sauce",quantity:50,unit:"g"},{ingredientId:"ing-milk",quantity:50,unit:"ml"},{ingredientId:"ing-cup",quantity:1,unit:"pcs"},{ingredientId:"ing-spoon",quantity:1,unit:"pcs"}],updatedAt:now() },
-  { id:"recipe-mac-beef",productId:"mac-beef",items:[{ingredientId:"ing-macaroni",quantity:100,unit:"g"},{ingredientId:"ing-cheese",quantity:30,unit:"g"},{ingredientId:"ing-sauce",quantity:50,unit:"g"},{ingredientId:"ing-milk",quantity:50,unit:"ml"},{ingredientId:"ing-beef",quantity:50,unit:"g"},{ingredientId:"ing-cup",quantity:1,unit:"pcs"},{ingredientId:"ing-spoon",quantity:1,unit:"pcs"}],updatedAt:now() },
-  { id:"recipe-spicy-mac",productId:"spicy-mac",items:[{ingredientId:"ing-macaroni",quantity:100,unit:"g"},{ingredientId:"ing-sauce",quantity:50,unit:"g"},{ingredientId:"ing-spicy",quantity:15,unit:"g"},{ingredientId:"ing-cup",quantity:1,unit:"pcs"},{ingredientId:"ing-spoon",quantity:1,unit:"pcs"}],updatedAt:now() },
-  { id:"recipe-mac-chicken",productId:"mac-chicken",items:[{ingredientId:"ing-macaroni",quantity:100,unit:"g"},{ingredientId:"ing-cheese",quantity:30,unit:"g"},{ingredientId:"ing-sauce",quantity:50,unit:"g"},{ingredientId:"ing-milk",quantity:50,unit:"ml"},{ingredientId:"ing-chicken",quantity:50,unit:"g"},{ingredientId:"ing-cup",quantity:1,unit:"pcs"},{ingredientId:"ing-spoon",quantity:1,unit:"pcs"}],updatedAt:now() }
+  { id:"recipe-mc-cheese-s",productId:"mc-cheese-s",items:[],updatedAt:now() },
+  { id:"recipe-mc-cheese-m",productId:"mc-cheese-m",items:[],updatedAt:now() },
+  { id:"recipe-mc-cheese-l",productId:"mc-cheese-l",items:[],updatedAt:now() },
+  { id:"recipe-mc-bolognese-s",productId:"mc-bolognese-s",items:[],updatedAt:now() },
+  { id:"recipe-mc-bolognese-m",productId:"mc-bolognese-m",items:[],updatedAt:now() },
+  { id:"recipe-mc-bolognese-l",productId:"mc-bolognese-l",items:[],updatedAt:now() },
+  { id:"recipe-mc-chicken-crispy-s",productId:"mc-chicken-crispy-s",items:[],updatedAt:now() },
+  { id:"recipe-mc-chicken-crispy-m",productId:"mc-chicken-crispy-m",items:[],updatedAt:now() },
+  { id:"recipe-mc-chicken-crispy-l",productId:"mc-chicken-crispy-l",items:[],updatedAt:now() },
+  { id:"recipe-mc-bol-chicken-crispy-s",productId:"mc-bol-chicken-crispy-s",items:[],updatedAt:now() },
+  { id:"recipe-mc-bol-chicken-crispy-m",productId:"mc-bol-chicken-crispy-m",items:[],updatedAt:now() },
+  { id:"recipe-mc-bol-chicken-crispy-l",productId:"mc-bol-chicken-crispy-l",items:[],updatedAt:now() }
 ];
 export async function seedDatabase(){
   if(await db.outlets.count()===0) await db.outlets.add(outlet);
@@ -54,6 +69,40 @@ export async function seedDatabase(){
   }
   if(await db.ingredients.count()===0) await db.ingredients.bulkAdd(ingredients);
   if(await db.recipes.count()===0) await db.recipes.bulkAdd(recipes);
+
+  const demoIngredientIds = ["ing-macaroni","ing-cheese","ing-sauce","ing-milk","ing-beef","ing-chicken","ing-spicy","ing-cup","ing-spoon"];
+  const demoNames = new Set(["Macaroni","Keju","Saus","Susu","Beef","Chicken","Bumbu Pedas","Cup / Packaging","Sendok"]);
+  for (const product of await db.products.toArray()) {
+    if (["mac-cheese","mac-beef","spicy-mac","mac-chicken","fries","sausage","chicken-nugget","iced-tea","mineral","cola","extra-cheese","extra-beef"].includes(product.id)) {
+      await db.products.delete(product.id);
+    }
+  }
+  for (const id of demoIngredientIds) {
+    const item = await db.ingredients.get(id);
+    if (item && demoNames.has(item.name) && item.costPerUnit === 0) await db.ingredients.delete(id);
+  }
+
+  for (const product of products) {
+    const existing = await db.products.get(product.id);
+    if (!existing) {
+      await db.products.add(product);
+    } else {
+      await db.products.update(product.id, {
+        name: product.name, sku: product.sku, category: product.category, price: product.price,
+        size: product.size, active: true, trackStock: false, updatedAt: now()
+      });
+    }
+  }
+
+  for (const ingredient of ingredients) {
+    const existing = await db.ingredients.get(ingredient.id);
+    if (!existing) await db.ingredients.add(ingredient);
+  }
+
+  for (const recipe of recipes) {
+    const existing = await db.recipes.get(recipe.id);
+    if (!existing) await db.recipes.add(recipe);
+  }
 
   const currentProducts=await db.products.toArray();
   const recipeIds=new Set((await db.recipes.toArray()).map(r=>r.productId));
