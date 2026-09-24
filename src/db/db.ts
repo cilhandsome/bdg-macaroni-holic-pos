@@ -9,7 +9,7 @@ export type IngredientRecord = {
   id: string; sku: string; name: string; category: string; unit: string; packageSize?: string;
   stock: number; minStock: number; costPerUnit: number; updatedAt: string;
 };
-export type RecipeItem = { ingredientId: string; quantity: number; unit: string; };
+export type RecipeItem = { ingredientId: string; quantity: number; unit: string; estimated?: boolean; };
 export type RecipeRecord = { id: string; productId: string; items: RecipeItem[]; updatedAt: string; };
 export type SupplierRecord = { id: string; name: string; phone: string; address: string; updatedAt: string; };
 export type PurchaseRecord = {
