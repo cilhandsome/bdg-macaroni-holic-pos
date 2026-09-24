@@ -351,6 +351,21 @@ export default function App(){
     try{const r=await syncPending();setNotice(r.configured?"Sinkronisasi selesai: "+r.synced+" transaksi.":"Supabase belum dikonfigurasi; mode offline tetap aktif.");await refresh();}
     catch(e){setError(e instanceof Error?e.message:"Sinkronisasi gagal.");}
   }
+  async function clearTransactionHistory(){
+    const confirmed=window.confirm("Hapus seluruh riwayat transaksi lokal? Data penjualan akan dihapus dan tidak dapat dipulihkan dari aplikasi ini.");
+    if(!confirmed)return;
+    try{
+      await db.sales.clear();
+      await db.syncQueue.clear();
+      await refresh();
+      setReceiptSale(null);
+      setNotice("Riwayat transaksi berhasil dikosongkan.");
+    }catch(e){
+      setError(e instanceof Error?e.message:"Riwayat transaksi gagal dihapus.");
+    }
+  }
+
+
   async function activateUser(user:UserRecord){
     await db.settings.put({key:"currentUserId",value:user.id});await refresh();setSelectedId("");setNotice("User aktif: "+user.name);
   }
@@ -383,7 +398,7 @@ export default function App(){
 
       {view==="dashboard"&&<Dashboard sales={todaySales} revenue={todayRevenue} cogs={todayCogs} expense={todayExpense} lowStock={lowStock}/>}
       {view==="pos"&&<POS categories={availableCategories} category={category} setCategory={setCategory} products={filteredProducts} query={query} setQuery={setQuery} addCart={addCart} cart={cart} clearCart={()=>setCart([])} changeQty={changeQty} total={total} cartSubtotal={cartSubtotal} orderType={orderType} setOrderType={setOrderType} tableNumber={tableNumber} setTableNumber={setTableNumber} onPay={()=>setPaymentOpen(true)}/>}
-      {view==="history"&&<History sales={sales} onOpen={setReceiptSale}/>}
+      {view==="history"&&<History sales={sales} onOpen={setReceiptSale} onClear={()=>void clearTransactionHistory()}/>
       {view==="products"&&<Products products={products} form={productForm} setForm={setProductForm} onSave={()=>void saveProduct()}/>}
       {view==="ingredients"&&<Ingredients ingredients={ingredients} lowStock={lowStock} form={ingredientForm} setForm={setIngredientForm} onSave={()=>void saveIngredient()} onEdit={editIngredient} onReset={resetIngredientForm}/>} 
       {view==="recipes"&&<Recipes products={products} ingredients={ingredients} recipes={recipes} form={recipeForm} setForm={setRecipeForm} cost={recipeCost} onAdd={()=>void addRecipeItem()} onRemove={(r,i)=>void removeRecipeItem(r,i)}/>}
@@ -515,23 +530,24 @@ function POS({
   );
 }
 
-function History({sales,onOpen}:{sales:SaleRecord[];onOpen:(s:SaleRecord)=>void}){
+function History({sales,onOpen,onClear}:{sales:SaleRecord[];onOpen:(s:SaleRecord)=>void;onClear:()=>void}){
   const rows = Array.isArray(sales) ? sales.filter(Boolean) : [];
   return <section className="page-section">
-    <Panel title="Riwayat Transaksi">
+    <div className="history-toolbar">
+      <div>
+        <div className="page-kicker">Transaksi</div>
+        <h2>Riwayat Transaksi</h2>
+        <p>{rows.length} transaksi tersimpan di perangkat.</p>
+      </div>
+      <button className="danger-button" type="button" onClick={onClear} disabled={!rows.length}>Hapus Riwayat</button>
+    </div>
+    <Panel title="Daftar Transaksi">
       <div className="simple-table">
         {rows.length ? rows.map((s) => (
-          <button
-            className="table-row clickable"
-            key={String(s.id)}
-            type="button"
-            onClick={() => onOpen(s)}
-          >
+          <button className="table-row clickable" key={String(s.id)} type="button" onClick={() => onOpen(s)}>
             <div>
               <strong>{s.invoiceNo || "Tanpa nomor"}</strong>
-              <small>
-                {s.createdAt ? dateLabel(s.createdAt) : "Tanggal tidak tersedia"} · {s.paymentMethod || "—"} · {s.orderType || "—"}
-              </small>
+              <small>{s.createdAt ? dateLabel(s.createdAt) : "Tanggal tidak tersedia"} · {s.paymentMethod || "—"} · {s.orderType || "—"}</small>
             </div>
             <strong>{rupiah(Number(s.total) || 0)}</strong>
           </button>
@@ -540,7 +556,6 @@ function History({sales,onOpen}:{sales:SaleRecord[];onOpen:(s:SaleRecord)=>void}
     </Panel>
   </section>;
 }
-
 function Products({products,form,setForm,onSave}:{products:ProductRecord[];form:any;setForm:(v:any)=>void;onSave:()=>void}){
   const resetForm=()=>setForm({id:"",sku:"",name:"",size:"",category:"Macaroni",price:"",stock:"",trackStock:false});
   return <section className="page-section"><div className="products-toolbar"><div><div className="page-kicker">Menu</div><h2>Master Menu</h2><p>Kelola menu yang tampil di kasir.</p></div><button className="primary-button toolbar-button" type="button" onClick={resetForm}>＋ Tambah Menu</button></div><div className="content-grid"><Panel title="Form Menu"><div className="form-grid"><Field label="SKU" value={form.sku} onChange={v=>setForm({...form,sku:v})}/><Field label="Nama menu" value={form.name} onChange={v=>setForm({...form,name:v})}/><label className="field">Ukuran<select value={form.size} onChange={e=>setForm({...form,size:e.target.value})}><option value="">Tanpa ukuran</option><option value="S">S</option><option value="M">M</option><option value="L">L</option></select></label><label className="field">Kategori<select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>{["Macaroni","Snack","Drink","Topping"].map(x=><option key={x}>{x}</option>)}</select></label><Field label="Harga jual" type="number" value={form.price} onChange={v=>setForm({...form,price:v})}/><Field label="Stok awal" type="number" value={form.stock} onChange={v=>setForm({...form,stock:v})}/><label className="checkbox"><input type="checkbox" checked={form.trackStock} onChange={e=>setForm({...form,trackStock:e.target.checked})}/> Track stok produk</label></div><button className="primary-button" onClick={onSave}>Simpan Produk</button></Panel><Panel title="Daftar Produk"><div className="simple-table">{products.map(p=><div className="table-row" key={p.id}><div><strong>{p.name}</strong><small>{p.sku} · {p.category}{p.size ? " · Ukuran " + p.size : ""}</small></div><div><strong>{p.price > 0 ? rupiah(p.price) : "Harga belum diatur"}</strong><small>{p.trackStock?"Stok "+p.stock:"Recipe stock"}</small></div></div>)}</div></Panel></div></section>}
