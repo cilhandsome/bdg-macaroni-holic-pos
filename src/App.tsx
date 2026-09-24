@@ -614,7 +614,134 @@ function Purchases({ingredients,suppliers,purchases,form,setForm,onSave}:{ingred
 function Stock({ingredients,movements,form,setForm,onSave}:{ingredients:IngredientRecord[];movements:StockMovementRecord[];form:any;setForm:(v:any)=>void;onSave:()=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Penyesuaian Stok"><label className="field">Bahan<select value={form.ingredientId} onChange={e=>setForm({...form,ingredientId:e.target.value})}><option value="">Pilih</option>{ingredients.map(i=><option key={i.id} value={i.id}>{i.name}</option>)}</select></label><label className="field">Jenis<select value={form.type} onChange={e=>setForm({...form,type:e.target.value})}><option value="IN">Masuk</option><option value="OUT">Keluar</option><option value="ADJUSTMENT">Set Fisik</option></select></label><Field label={form.type==="ADJUSTMENT"?"Stok fisik":"Qty"} type="number" value={form.quantity} onChange={v=>setForm({...form,quantity:v})}/><Field label="Alasan" value={form.reason} onChange={v=>setForm({...form,reason:v})}/><button className="primary-button" onClick={onSave}>Simpan</button></Panel><Panel title="Kartu Stok Terbaru"><div className="simple-table">{movements.slice(0,30).map(m=><div className="table-row" key={m.id}><div><strong>{ingredients.find(i=>i.id===m.ingredientId)?.name}</strong><small>{m.type} · {m.reason}</small></div><strong>{m.quantity}</strong></div>)}</div></Panel></div></section>}
 function Expenses({expenses,form,setForm,onSave}:{expenses:ExpenseRecord[];form:any;setForm:(v:any)=>void;onSave:()=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Catat Pengeluaran"><Field label="Kategori" value={form.category} onChange={v=>setForm({...form,category:v})}/><Field label="Deskripsi" value={form.description} onChange={v=>setForm({...form,description:v})}/><Field label="Nominal" type="number" value={form.amount} onChange={v=>setForm({...form,amount:v})}/><label className="field">Metode<select value={form.paymentMethod} onChange={e=>setForm({...form,paymentMethod:e.target.value})}><option>Cash</option><option>Transfer</option><option>Debit</option></select></label><button className="primary-button" onClick={onSave}>Simpan Pengeluaran</button></Panel><Panel title="Riwayat Pengeluaran"><div className="simple-table">{expenses.map(e=><div className="table-row" key={e.id}><div><strong>{e.description}</strong><small>{e.category} · {dateLabel(e.createdAt)}</small></div><strong>{rupiah(e.amount)}</strong></div>)}</div></Panel></div></section>}
 function Shift({active,shifts,opening,setOpening,closing,setClosing,onOpen,onClose}:{active:ShiftRecord|null;shifts:ShiftRecord[];opening:string;setOpening:(v:string)=>void;closing:string;setClosing:(v:string)=>void;onOpen:()=>void;onClose:()=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Shift Aktif">{active?<><div className="shift-current"><div><strong>OPEN</strong><small>{dateLabel(active.startedAt)}</small></div><strong>{rupiah(active.openingCash)}</strong></div><Field label="Kas fisik saat tutup" type="number" value={closing} onChange={setClosing}/><button className="primary-button" onClick={onClose}>Tutup Shift</button></>:<><Field label="Modal awal" type="number" value={opening} onChange={setOpening}/><button className="primary-button" onClick={onOpen}>Buka Shift</button></>}</Panel><Panel title="Riwayat Shift"><div className="simple-table">{shifts.map(s=><div className="table-row" key={s.id}><div><strong>{s.status}</strong><small>{dateLabel(s.startedAt)}</small></div><div><strong>{rupiah(s.openingCash)}</strong><small>{s.variance==null?"—":"Selisih "+rupiah(s.variance)}</small></div></div>)}</div></Panel></div></section>}
-function Reports({sales,expenses,products}:{sales:SaleRecord[];expenses:ExpenseRecord[];products:ProductRecord[]}){const revenue=sales.reduce((n,s)=>n+s.total,0);const cogs=sales.reduce((n,s)=>n+(Number(s.costOfGoods)||0),0);const exp=expenses.reduce((n,e)=>n+e.amount,0);const rows=products.map(p=>({p,count:sales.reduce((n,s)=>n+(s.items.find(i=>i.productId===p.id)?.qty??0),0)})).sort((a,b)=>b.count-a.count).slice(0,8);return <section className="page-section"><div className="kpi-grid"><Kpi title="Omzet" value={rupiah(revenue)} meta={sales.length+" transaksi"}/><Kpi title="HPP" value={rupiah(cogs)} meta="COGS"/><Kpi title="Laba Kotor" value={rupiah(revenue-cogs)} meta="Sales - HPP"/><Kpi title="Expense" value={rupiah(exp)} meta="Operasional"/></div><div className="dashboard-grid"><Panel title="Metode Pembayaran"><div className="simple-table">{["Cash","QRIS","Debit","Transfer"].map(m=><div className="table-row" key={m}><span>{m}</span><strong>{rupiah(sales.filter(s=>s.paymentMethod===m).reduce((n,s)=>n+s.total,0))}</strong></div>)}</div></Panel><Panel title="Produk Terjual"><div className="simple-table">{rows.map(r=><div className="table-row" key={r.p.id}><span>{r.p.name}</span><strong>{r.count}</strong></div>)}</div></Panel></div></section>}
+function Reports({sales,expenses,products}:{sales:SaleRecord[];expenses:ExpenseRecord[];products:ProductRecord[]}){
+  const [from,setFrom]=useState(today());
+  const [to,setTo]=useState(today());
+
+  const inRange=(date:string)=>{
+    const d=date.slice(0,10);
+    return d>=from && d<=to;
+  };
+
+  const filteredSales=sales.filter(s=>inRange(s.createdAt));
+  const filteredExpenses=expenses.filter(e=>inRange(e.createdAt));
+
+  const revenue=filteredSales.reduce((n,s)=>n+(Number(s.total)||0),0);
+  const cogs=filteredSales.reduce((n,s)=>n+(Number(s.costOfGoods)||0),0);
+  const expense=filteredExpenses.reduce((n,e)=>n+(Number(e.amount)||0),0);
+  const grossProfit=revenue-cogs;
+  const netProfit=grossProfit-expense;
+  const grossMargin=revenue>0?(grossProfit/revenue)*100:0;
+  const avgTicket=filteredSales.length?revenue/filteredSales.length:0;
+  const incompleteHpp=filteredSales.filter(s=>(Number(s.costOfGoods)||0)<=0).length;
+
+  const paymentRows=["Cash","QRIS","Debit","Transfer"].map(method=>({
+    method,
+    count:filteredSales.filter(s=>s.paymentMethod===method).length,
+    total:filteredSales.filter(s=>s.paymentMethod===method).reduce((n,s)=>n+(Number(s.total)||0),0)
+  }));
+
+  const productMap=new Map<string,{name:string;qty:number;revenue:number;cogs:number}>();
+  for(const sale of filteredSales){
+    for(const item of (sale.items||[])){
+      const current=productMap.get(item.productId)||{name:item.name||"Produk",qty:0,revenue:0,cogs:0};
+      current.qty+=(Number(item.qty)||0);
+      current.revenue+=(Number(item.price)||0)*(Number(item.qty)||0);
+      current.cogs+=(Number(item.cost)||0)*(Number(item.qty)||0);
+      productMap.set(item.productId,current);
+    }
+  }
+  const productRows=[...productMap.values()].sort((a,b)=>b.revenue-a.revenue);
+
+  const exportReport=()=>{
+    const rows=[
+      ["Periode",from+" s/d "+to],
+      [],
+      ["Ringkasan","Nilai"],
+      ["Omzet",revenue],
+      ["HPP",cogs],
+      ["Laba Kotor",grossProfit],
+      ["Expense",expense],
+      ["Laba Bersih",netProfit],
+      ["Gross Margin %",grossMargin],
+      ["Transaksi",filteredSales.length],
+      ["Rata-rata Transaksi",avgTicket],
+      [],
+      ["Metode Pembayaran","Jumlah Transaksi","Omzet"],
+      ...paymentRows.map(r=>[r.method,r.count,r.total]),
+      [],
+      ["Produk","Qty","Omzet","HPP Item","Laba Kotor"],
+      ...productRows.map(r=>[r.name,r.qty,r.revenue,r.cogs,r.revenue-r.cogs])
+    ];
+    const csv=rows.map(row=>row.map(value=>`"${String(value??"").replaceAll('"','""')}"`).join(",")).join("\n");
+    const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+    const url=URL.createObjectURL(blob);const a=document.createElement("a");
+    a.href=url;a.download="laporan-macaroni-holic-"+from+"-sd-"+to+".csv";a.click();URL.revokeObjectURL(url);
+  };
+
+  return <section className="page-section">
+    <div className="report-toolbar">
+      <div>
+        <div className="page-kicker">Analitik</div>
+        <h2>Laporan Penjualan & Profitabilitas</h2>
+        <p>Gunakan periode untuk melihat omzet, HPP, laba, pembayaran, dan produk terjual.</p>
+      </div>
+      <div className="report-filters">
+        <label>Tanggal mulai<input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label>
+        <label>Tanggal akhir<input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label>
+        <button className="secondary-button" type="button" onClick={exportReport}>Export CSV</button>
+      </div>
+    </div>
+
+    {incompleteHpp>0&&<div className="report-warning"><strong>Catatan HPP:</strong> {incompleteHpp} transaksi pada periode ini belum memiliki HPP tercatat. HPP dan laba untuk transaksi tersebut belum dapat dianggap final.</div>}
+
+    <div className="kpi-grid">
+      <Kpi title="Omzet" value={rupiah(revenue)} meta={filteredSales.length+" transaksi"}/>
+      <Kpi title="HPP" value={rupiah(cogs)} meta="COGS tercatat"/>
+      <Kpi title="Laba Kotor" value={rupiah(grossProfit)} meta={grossMargin.toFixed(1)+"% gross margin"}/>
+      <Kpi title="Laba Bersih" value={rupiah(netProfit)} meta={rupiah(expense)+" expense"}/>
+      <Kpi title="Rata-rata Transaksi" value={rupiah(avgTicket)} meta="Average ticket"/>
+      <Kpi title="Jumlah Transaksi" value={String(filteredSales.length)} meta={from+" s/d "+to}/>
+    </div>
+
+    <div className="dashboard-grid">
+      <Panel title="Metode Pembayaran">
+        <div className="simple-table">
+          {paymentRows.map(r=><div className="table-row" key={r.method}>
+            <div><strong>{r.method}</strong><small>{r.count} transaksi</small></div>
+            <strong>{rupiah(r.total)}</strong>
+          </div>)}
+        </div>
+      </Panel>
+
+      <Panel title="Produk Terjual">
+        <div className="report-table">
+          <div className="report-row report-head"><span>Produk</span><span>Qty</span><span>Omzet</span><span>Laba</span></div>
+          {productRows.slice(0,12).map(r=><div className="report-row" key={r.name}>
+            <span>{r.name}</span><strong>{r.qty}</strong><span>{rupiah(r.revenue)}</span><strong>{rupiah(r.revenue-r.cogs)}</strong>
+          </div>)}
+          {!productRows.length&&<Empty text="Belum ada penjualan pada periode ini."/>}
+        </div>
+      </Panel>
+    </div>
+
+    <div className="dashboard-grid">
+      <Panel title="Rincian Profitabilitas">
+        <div className="profit-breakdown">
+          <div><span>Omzet</span><strong>{rupiah(revenue)}</strong></div>
+          <div><span>HPP</span><strong>{rupiah(cogs)}</strong></div>
+          <div><span>Laba Kotor</span><strong>{rupiah(grossProfit)}</strong></div>
+          <div><span>Expense</span><strong>{rupiah(expense)}</strong></div>
+          <div className="profit-total"><span>Laba Bersih</span><strong>{rupiah(netProfit)}</strong></div>
+        </div>
+      </Panel>
+      <Panel title="Catatan">
+        <p className="setting-copy">HPP dihitung dari cost bahan yang tercatat saat transaksi. Harga pasar bahan dapat berubah melalui Master Bahan Baku. Transaksi lama dengan HPP Rp0 akan tetap ditandai sebagai HPP belum tercatat agar laporan tidak memberikan angka laba yang menyesatkan.</p>
+      </Panel>
+    </div>
+  </section>;
+}
+
 function AdminList({title,items,selected,setSelected,onEdit}:{title:string;items:Array<{id:string;title:string;meta:string}>;selected:string;setSelected:(v:string)=>void;onEdit:()=>void}){return <section className="page-section"><Panel title={title}><div className="simple-table">{items.map(i=><button className={selected===i.id?"table-row clickable selected-row":"table-row clickable"} key={i.id} onClick={()=>setSelected(i.id)}><div><strong>{i.title}</strong><small>{i.meta}</small></div><span>›</span></button>)}</div><button className="primary-button" disabled={!selected} onClick={onEdit}>Edit Dipilih</button></Panel></section>}
 function Users({users,selected,setSelected,onEdit,onActivate}:{users:UserRecord[];selected:string;setSelected:(v:string)=>void;onEdit:()=>void;onActivate:(u:UserRecord)=>void}){return <section className="page-section"><Panel title="Pengguna"><div className="simple-table">{users.map(u=><div className={selected===u.id?"table-row selected-row":"table-row"} key={u.id} onClick={()=>setSelected(u.id)}><div><strong>{u.name}</strong><small>{u.username} · {u.role}</small></div><button className="secondary-button" onClick={()=>onActivate(u)}>Aktifkan</button></div>)}</div><button className="primary-button" disabled={!selected} onClick={onEdit}>Edit Nama</button></Panel></section>}
 function Settings({onBackup,onRestore,onSync}:{onBackup:()=>void;onRestore:(f:File)=>void;onSync:()=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Backup & Restore"><button className="primary-button" onClick={onBackup}>Download Backup JSON</button><label className="upload-button">Restore Backup<input type="file" accept="application/json" onChange={e=>{const f=e.target.files?.[0];if(f)onRestore(f);}}/></label></Panel><Panel title="Cloud Sync"><p className="setting-copy">Isi VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY ketika database cloud siap dipakai.</p><button className="secondary-button wide" onClick={onSync}>Coba Sync Sekarang</button></Panel></div></section>}
