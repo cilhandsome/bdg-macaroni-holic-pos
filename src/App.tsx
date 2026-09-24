@@ -121,13 +121,34 @@ export default function App(){
   const activeShift=shifts.find(s=>s.status==="OPEN"&&s.outletId===context?.outlet.id&&s.userId===context?.user.id)??null;
 
   function addCart(p:ProductRecord){
-    const existing=cart.find(x=>x.id===p.id);
-    if(p.trackStock&&(!existing?p.stock<1:existing.qty>=p.stock)) return;
-    setCart(list=>existing?list.map(x=>x.id===p.id?{...x,qty:x.qty+1}:x):[...list,{...p,qty:1}]);
+    try {
+      if (!p || !p.id) return;
+      const safeProduct: ProductRecord = {
+        id: String(p.id),
+        sku: String(p.sku ?? ""),
+        name: String(p.name ?? "Produk"),
+        category: p.category,
+        price: Number(p.price) || 0,
+        stock: Number(p.stock) || 0,
+        emoji: String(p.emoji ?? "🍝"),
+        active: p.active !== false,
+        trackStock: p.trackStock === true,
+        updatedAt: String(p.updatedAt ?? new Date().toISOString()),
+      };
+      setCart((list) => {
+        const existing = list.find((x) => x.id === safeProduct.id);
+        if (safeProduct.trackStock && (!existing ? safeProduct.stock < 1 : existing.qty >= safeProduct.stock)) return list;
+        return existing
+          ? list.map((x) => x.id === safeProduct.id ? { ...x, qty: x.qty + 1 } : x)
+          : [...list, { ...safeProduct, qty: 1 }];
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Produk gagal ditambahkan ke keranjang.");
+    }
   }
   function changeQty(id:string,delta:number){setCart(list=>list.map(x=>x.id===id?{...x,qty:x.qty+delta}:x).filter(x=>x.qty>0));}
 
-  const cartSubtotal=cart.reduce((n,x)=>n+x.price*x.qty,0);
+  const cartSubtotal=cart.reduce((n,x)=>n+(Number(x.price)||0)*(Number(x.qty)||0),0);
   const total=cartSubtotal; const received=Number(cashReceived)||0; const change=Math.max(received-total,0);
 
   async function checkout(){
