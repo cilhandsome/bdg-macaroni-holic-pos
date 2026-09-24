@@ -85,7 +85,7 @@ export default function App(){
   const [receiptSale,setReceiptSale]=useState<SaleRecord|null>(null);
 
   const [productForm,setProductForm]=useState({id:"",sku:"",name:"",size:"" as ""|"S"|"M"|"L",category:"Macaroni" as Exclude<Category,"Semua">,price:"",stock:"",trackStock:false});
-  const [ingredientForm,setIngredientForm]=useState({id:"",sku:"",name:"",category:"Bahan utama",unit:"g",stock:"",minStock:"",costPerUnit:""});
+  const [ingredientForm,setIngredientForm]=useState({id:"",sku:"",name:"",category:"Bahan utama",unit:"g",stock:"",minStock:"",costPerUnit:"",includeInHpp:true,priceMode:"RO" as "RO"|"MARKET"|"MANUAL",packageSize:""});
   const [recipeForm,setRecipeForm]=useState({productId:"",ingredientId:"",qty:""});
   const [purchaseForm,setPurchaseForm]=useState({ingredientId:"",supplierId:"",quantity:"",totalCost:""});
   const [stockForm,setStockForm]=useState({ingredientId:"",type:"IN" as "IN"|"OUT"|"ADJUSTMENT",quantity:"",reason:""});
@@ -117,7 +117,11 @@ export default function App(){
 
   const recipeCost=(productId:string)=>{
     const r=recipes.find(x=>x.productId===productId);
-    return r?r.items.reduce((sum,line)=>sum+(ingredients.find(i=>i.id===line.ingredientId)?.costPerUnit??0)*line.quantity,0):0;
+    return r ? r.items.reduce((sum,line) => {
+    const ingredient = ingredients.find(i => i.id === line.ingredientId);
+    if (!ingredient || ingredient.includeInHpp === false) return sum;
+    return sum + (ingredient.costPerUnit ?? 0) * line.quantity;
+  }, 0) : 0;
   };
   const todaySales=sales.filter(s=>s.createdAt.startsWith(today()));
   const todayRevenue=todaySales.reduce((n,s)=>n+s.total,0);
@@ -175,7 +179,7 @@ export default function App(){
             const ing = await db.ingredients.get(line.ingredientId);
             const needed = line.quantity * item.qty;
             if (!ing || ing.stock < needed) throw new Error("Stok " + (ing?.name ?? "bahan") + " tidak mencukupi.");
-            cogs += ing.costPerUnit * line.quantity * item.qty;
+            if (ing.includeInHpp !== false) cogs += ing.costPerUnit * line.quantity * item.qty;
           }
         } else if (p.trackStock && p.stock < item.qty) {
           throw new Error("Stok " + p.name + " tidak mencukupi.");
@@ -244,8 +248,8 @@ export default function App(){
   }
   async function saveIngredient(){
     if(!ingredientForm.name)return;
-    const record:IngredientRecord={id:ingredientForm.id||crypto.randomUUID(),sku:ingredientForm.sku||"ING-"+Date.now().toString().slice(-6),name:ingredientForm.name,category:ingredientForm.category,unit:ingredientForm.unit,stock:Number(ingredientForm.stock)||0,minStock:Number(ingredientForm.minStock)||0,costPerUnit:Number(ingredientForm.costPerUnit)||0,updatedAt:new Date().toISOString()};
-    await db.ingredients.put(record);await refresh();setIngredientForm({id:"",sku:"",name:"",category:"Bahan utama",unit:"g",stock:"",minStock:"",costPerUnit:""});setNotice("Bahan baku tersimpan.");
+    const record:IngredientRecord={id:ingredientForm.id||crypto.randomUUID(),sku:ingredientForm.sku||"ING-"+Date.now().toString().slice(-6),name:ingredientForm.name,category:ingredientForm.category,unit:ingredientForm.unit,stock:Number(ingredientForm.stock)||0,minStock:Number(ingredientForm.minStock)||0,costPerUnit:Number(ingredientForm.costPerUnit)||0,includeInHpp:ingredientForm.includeInHpp,priceMode:ingredientForm.priceMode,packageSize:ingredientForm.packageSize,updatedAt:new Date().toISOString()};
+    await db.ingredients.put(record);await refresh();setIngredientForm({id:"",sku:"",name:"",category:"Bahan utama",unit:"g",stock:"",minStock:"",costPerUnit:"",includeInHpp:true,priceMode:"RO",packageSize:""});setNotice("Bahan baku tersimpan.");
   }
   async function addRecipeItem(){
     if(!recipeForm.productId||!recipeForm.ingredientId||!recipeForm.qty)return;
@@ -519,7 +523,50 @@ function History({sales,onOpen}:{sales:SaleRecord[];onOpen:(s:SaleRecord)=>void}
 function Products({products,form,setForm,onSave}:{products:ProductRecord[];form:any;setForm:(v:any)=>void;onSave:()=>void}){
   const resetForm=()=>setForm({id:"",sku:"",name:"",size:"",category:"Macaroni",price:"",stock:"",trackStock:false});
   return <section className="page-section"><div className="products-toolbar"><div><div className="page-kicker">Menu</div><h2>Master Menu</h2><p>Kelola menu yang tampil di kasir.</p></div><button className="primary-button toolbar-button" type="button" onClick={resetForm}>＋ Tambah Menu</button></div><div className="content-grid"><Panel title="Form Menu"><div className="form-grid"><Field label="SKU" value={form.sku} onChange={v=>setForm({...form,sku:v})}/><Field label="Nama menu" value={form.name} onChange={v=>setForm({...form,name:v})}/><label className="field">Ukuran<select value={form.size} onChange={e=>setForm({...form,size:e.target.value})}><option value="">Tanpa ukuran</option><option value="S">S</option><option value="M">M</option><option value="L">L</option></select></label><label className="field">Kategori<select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>{["Macaroni","Snack","Drink","Topping"].map(x=><option key={x}>{x}</option>)}</select></label><Field label="Harga jual" type="number" value={form.price} onChange={v=>setForm({...form,price:v})}/><Field label="Stok awal" type="number" value={form.stock} onChange={v=>setForm({...form,stock:v})}/><label className="checkbox"><input type="checkbox" checked={form.trackStock} onChange={e=>setForm({...form,trackStock:e.target.checked})}/> Track stok produk</label></div><button className="primary-button" onClick={onSave}>Simpan Produk</button></Panel><Panel title="Daftar Produk"><div className="simple-table">{products.map(p=><div className="table-row" key={p.id}><div><strong>{p.name}</strong><small>{p.sku} · {p.category}{p.size ? " · Ukuran " + p.size : ""}</small></div><div><strong>{p.price > 0 ? rupiah(p.price) : "Harga belum diatur"}</strong><small>{p.trackStock?"Stok "+p.stock:"Recipe stock"}</small></div></div>)}</div></Panel></div></section>}
-function Ingredients({ingredients,lowStock,form,setForm,onSave}:{ingredients:IngredientRecord[];lowStock:IngredientRecord[];form:any;setForm:(v:any)=>void;onSave:()=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Master Bahan Baku"><div className="form-grid"><Field label="SKU" value={form.sku} onChange={v=>setForm({...form,sku:v})}/><Field label="Nama" value={form.name} onChange={v=>setForm({...form,name:v})}/><Field label="Kategori" value={form.category} onChange={v=>setForm({...form,category:v})}/><Field label="Satuan" value={form.unit} onChange={v=>setForm({...form,unit:v})}/><Field label="Stok" type="number" value={form.stock} onChange={v=>setForm({...form,stock:v})}/><Field label="Minimum" type="number" value={form.minStock} onChange={v=>setForm({...form,minStock:v})}/><Field label="HPP / satuan" type="number" value={form.costPerUnit} onChange={v=>setForm({...form,costPerUnit:v})}/></div><button className="primary-button" onClick={onSave}>Simpan Bahan</button></Panel><Panel title="Daftar Bahan"><div className="simple-table">{ingredients.map(i=><div className="table-row" key={i.id}><div><strong>{i.name}</strong><small>{i.sku} · {i.unit}</small></div><div className={i.stock<=i.minStock?"danger-text":""}><strong>{i.stock} {i.unit}</strong><small>HPP {rupiah(i.costPerUnit)}</small></div></div>)}<div className="panel-subtitle">Stok menipis: {lowStock.length}</div></div></Panel></div></section>}
+function Ingredients({ingredients,lowStock,form,setForm,onSave}:{ingredients:IngredientRecord[];lowStock:IngredientRecord[];form:any;setForm:(v:any)=>void;onSave:()=>void}){
+  return <section className="page-section">
+    <div className="content-grid">
+      <Panel title="Master Bahan Baku">
+        <div className="form-grid">
+          <Field label="SKU" value={form.sku} onChange={v=>setForm({...form,sku:v})}/>
+          <Field label="Nama" value={form.name} onChange={v=>setForm({...form,name:v})}/>
+          <Field label="Kategori" value={form.category} onChange={v=>setForm({...form,category:v})}/>
+          <Field label="Satuan pemakaian" value={form.unit} onChange={v=>setForm({...form,unit:v})}/>
+          <Field label="Kemasan pembelian" value={form.packageSize} onChange={v=>setForm({...form,packageSize:v})}/>
+          <Field label="Stok" type="number" value={form.stock} onChange={v=>setForm({...form,stock:v})}/>
+          <Field label="Minimum" type="number" value={form.minStock} onChange={v=>setForm({...form,minStock:v})}/>
+          <Field label="HPP / satuan" type="number" value={form.costPerUnit} onChange={v=>setForm({...form,costPerUnit:v})}/>
+          <label className="field">Sumber harga
+            <select value={form.priceMode} onChange={e=>setForm({...form,priceMode:e.target.value})}>
+              <option value="RO">Harga RO / supplier</option>
+              <option value="MARKET">Harga pasar — dapat berubah</option>
+              <option value="MANUAL">Manual</option>
+            </select>
+          </label>
+          <label className="checkbox"><input type="checkbox" checked={form.includeInHpp} onChange={e=>setForm({...form,includeInHpp:e.target.checked})}/> Masukkan ke HPP</label>
+        </div>
+        <button className="primary-button" onClick={onSave}>Simpan Bahan</button>
+      </Panel>
+      <Panel title="Daftar Bahan">
+        <div className="simple-table">
+          {ingredients.map(i=>
+            <div className="table-row" key={i.id}>
+              <div>
+                <strong>{i.name}</strong>
+                <small>{i.sku} · {i.packageSize || "Kemasan belum diatur"}</small>
+              </div>
+              <div className={i.stock<=i.minStock?"danger-text":""}>
+                <strong>{rupiah(i.costPerUnit)} / {i.unit}</strong>
+                <small>{i.includeInHpp===false?"Di luar HPP":"Masuk HPP"} · {i.priceMode==="MARKET"?"Harga pasar":"Harga RO"}</small>
+              </div>
+            </div>
+          )}
+          <div className="panel-subtitle">Stok menipis: {lowStock.length}</div>
+        </div>
+      </Panel>
+    </div>
+  </section>;
+}
 function Recipes({products,ingredients,recipes,form,setForm,cost,onAdd,onRemove}:{products:ProductRecord[];ingredients:IngredientRecord[];recipes:RecipeRecord[];form:any;setForm:(v:any)=>void;cost:(id:string)=>number;onAdd:()=>void;onRemove:(r:string,i:string)=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Resep / BOM"><label className="field">Produk<select value={form.productId} onChange={e=>setForm({...form,productId:e.target.value})}><option value="">Pilih</option>{products.filter(p=>!p.trackStock).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><label className="field">Bahan<select value={form.ingredientId} onChange={e=>setForm({...form,ingredientId:e.target.value})}><option value="">Pilih</option>{ingredients.map(i=><option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}</select></label><Field label="Qty" type="number" value={form.qty} onChange={v=>setForm({...form,qty:v})}/><button className="primary-button" onClick={onAdd}>Tambah Komponen</button></Panel><Panel title="HPP & Margin">{products.filter(p=>!p.trackStock).map(p=><div className="recipe-card" key={p.id}><div className="recipe-head"><strong>{p.name}</strong><strong>HPP {rupiah(cost(p.id))}</strong></div>{recipes.filter(r=>r.productId===p.id).flatMap(r=>r.items.map(line=><div className="recipe-line" key={line.ingredientId}><span>{ingredients.find(i=>i.id===line.ingredientId)?.name}</span><span>{line.quantity} {line.unit}{line.estimated ? " · estimasi S" : ""}</span><button className="link-danger" onClick={()=>{const r=recipes.find(x=>x.productId===p.id);if(r)onRemove(r.id,line.ingredientId)}}>hapus</button></div>))}<div className="recipe-margin">Jual {rupiah(p.price)} · Margin {p.price?(((p.price-cost(p.id))/p.price)*100).toFixed(1):"0"}%</div></div>)}</Panel></div></section>}
 function Purchases({ingredients,suppliers,purchases,form,setForm,onSave}:{ingredients:IngredientRecord[];suppliers:SupplierRecord[];purchases:PurchaseRecord[];form:any;setForm:(v:any)=>void;onSave:()=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Penerimaan Barang"><label className="field">Supplier<select value={form.supplierId} onChange={e=>setForm({...form,supplierId:e.target.value})}><option value="">Pilih</option>{suppliers.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label><label className="field">Bahan<select value={form.ingredientId} onChange={e=>setForm({...form,ingredientId:e.target.value})}><option value="">Pilih</option>{ingredients.map(i=><option key={i.id} value={i.id}>{i.name}</option>)}</select></label><Field label="Qty" type="number" value={form.quantity} onChange={v=>setForm({...form,quantity:v})}/><Field label="Total biaya" type="number" value={form.totalCost} onChange={v=>setForm({...form,totalCost:v})}/><button className="primary-button" onClick={onSave}>Simpan Pembelian</button></Panel><Panel title="Riwayat Pembelian"><div className="simple-table">{purchases.map(p=><div className="table-row" key={p.id}><div><strong>{p.invoiceNo}</strong><small>{dateLabel(p.createdAt)}</small></div><strong>{rupiah(p.totalCost)}</strong></div>)}</div></Panel></div></section>}
 function Stock({ingredients,movements,form,setForm,onSave}:{ingredients:IngredientRecord[];movements:StockMovementRecord[];form:any;setForm:(v:any)=>void;onSave:()=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Penyesuaian Stok"><label className="field">Bahan<select value={form.ingredientId} onChange={e=>setForm({...form,ingredientId:e.target.value})}><option value="">Pilih</option>{ingredients.map(i=><option key={i.id} value={i.id}>{i.name}</option>)}</select></label><label className="field">Jenis<select value={form.type} onChange={e=>setForm({...form,type:e.target.value})}><option value="IN">Masuk</option><option value="OUT">Keluar</option><option value="ADJUSTMENT">Set Fisik</option></select></label><Field label={form.type==="ADJUSTMENT"?"Stok fisik":"Qty"} type="number" value={form.quantity} onChange={v=>setForm({...form,quantity:v})}/><Field label="Alasan" value={form.reason} onChange={v=>setForm({...form,reason:v})}/><button className="primary-button" onClick={onSave}>Simpan</button></Panel><Panel title="Kartu Stok Terbaru"><div className="simple-table">{movements.slice(0,30).map(m=><div className="table-row" key={m.id}><div><strong>{ingredients.find(i=>i.id===m.ingredientId)?.name}</strong><small>{m.type} · {m.reason}</small></div><strong>{m.quantity}</strong></div>)}</div></Panel></div></section>}
