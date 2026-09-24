@@ -1,0 +1,10 @@
+{
+  "name": "Macaroni Holic POS",
+  "short_name": "MH POS",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#111111",
+  "description": "Macaroni Holic Point of Sale",
+  "icons": []
+}
