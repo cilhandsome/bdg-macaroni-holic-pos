@@ -44,6 +44,25 @@ export async function seedDatabase(){
   if(await db.products.count()===0) await db.products.bulkAdd(products);
   if(await db.ingredients.count()===0) await db.ingredients.bulkAdd(ingredients);
   if(await db.recipes.count()===0) await db.recipes.bulkAdd(recipes);
+
+  const currentProducts=await db.products.toArray();
+  const recipeIds=new Set((await db.recipes.toArray()).map(r=>r.productId));
+  for(const product of currentProducts){
+    const patch: Partial<typeof product> = {};
+    if(!product.sku) patch.sku="MH-"+product.id.toUpperCase().slice(0,10);
+    if(product.trackStock===undefined) patch.trackStock=!recipeIds.has(product.id);
+    if(Object.keys(patch).length) await db.products.update(product.id,patch);
+  }
+
+  const currentSales=await db.sales.toArray();
+  for(const sale of currentSales){
+    const patch: Partial<typeof sale> = {};
+    if(sale.costOfGoods===undefined) patch.costOfGoods=0;
+    if(sale.outletId===undefined) patch.outletId=outlet.id;
+    if(sale.userId===undefined) patch.userId="user-admin";
+    if(Object.keys(patch).length) await db.sales.update(sale.id,patch);
+  }
+
   const defaults=[["companyName","Macaroni Holic"],["currentOutletId",outlet.id],["currentUserId","user-admin"]];
   for(const [key,value] of defaults){ if(!(await db.settings.get(key))) await db.settings.add({key,value}); }
 }
