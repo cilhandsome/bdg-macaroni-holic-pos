@@ -18,3 +18,7 @@ Cloud:
 - Tombol Sync mengirim transaksi lokal yang belum tersinkron.
 
 Backup tersedia melalui Pengaturan.
+
+
+## Final readiness check
+The main branch is being validated with the project CI workflow before user testing.
