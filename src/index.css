@@ -134,3 +134,33 @@ button { cursor: pointer; }
   .cart-panel { min-height: 440px; }
   .payment-methods { grid-template-columns: 1fr 1fr; }
 }
+
+
+.history-modal { width: min(700px, 100%); background: #fff; border-radius: 20px; padding: 22px; box-shadow: 0 30px 70px rgba(0,0,0,.2); }
+.history-list { display: grid; gap: 8px; margin-top: 16px; max-height: 60vh; overflow: auto; }
+.history-row { width: 100%; border: 1px solid #e5e7eb; background: #fff; border-radius: 12px; padding: 13px 14px; display: flex; justify-content: space-between; align-items: center; gap: 16px; text-align: left; }
+.history-row:hover { background: #fafafa; border-color: #d4d4d4; }
+.history-row strong, .history-row span { display: block; }
+.history-row strong { font-size: 12px; }
+.history-row span { margin-top: 4px; color: #737373; font-size: 11px; }
+.history-total { font-size: 13px; font-weight: 900; white-space: nowrap; }
+.history-empty { padding: 35px 10px; text-align: center; color: #737373; }
+.receipt-modal { width: min(460px, 100%); background: #fff; border-radius: 20px; padding: 22px; box-shadow: 0 30px 70px rgba(0,0,0,.2); }
+.receipt-sheet { width: min(330px, 100%); margin: 10px auto 0; padding: 18px; border: 1px dashed #d4d4d4; background: #fff; }
+.receipt-brand { text-align: center; font-weight: 950; letter-spacing: .08em; font-size: 15px; }
+.receipt-muted { margin-top: 4px; text-align: center; color: #737373; font-size: 10px; }
+.receipt-divider { border-top: 1px dashed #bdbdbd; margin: 12px 0; }
+.receipt-meta, .receipt-item, .receipt-total { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; margin: 6px 0; }
+.receipt-meta span, .receipt-item span { color: #737373; }
+.receipt-item > div span { display: block; margin-top: 2px; }
+.receipt-total { font-size: 15px; font-weight: 900; margin-top: 10px; }
+.receipt-thanks { text-align: center; margin-top: 15px; font-size: 10px; color: #737373; }
+.receipt-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.secondary-button { min-height: 50px; border: 1px solid #d4d4d4; background: #fff; border-radius: 12px; font-weight: 900; }
+@media print {
+  body { background: #fff; }
+  .pos-app, .modal-backdrop { background: #fff; }
+  .no-print { display: none !important; }
+  .receipt-modal { box-shadow: none; padding: 0; }
+  .receipt-sheet { border: 0; width: 80mm; max-width: 80mm; margin: 0; }
+}
