@@ -28,26 +28,143 @@ const ingredients: IngredientRecord[] = [
   { id:"ing-topping-crispy",sku:"ING-002",name:"Tepung Crispy Istimewa",category:"Pelapis",unit:"g",packageSize:"800 gr",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
   { id:"ing-sauce-bolognese",sku:"ING-003",name:"Saus Bolognese Special KKI",category:"Saus",unit:"g",packageSize:"500 gr",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
   { id:"ing-cheese",sku:"ING-004",name:"Bubuk Keju Super Khas KKI",category:"Saus",unit:"g",packageSize:"200 gr",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
-  { id:"ing-chili",sku:"ING-005",name:"Saus Chili",category:"Saus",unit:"g",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
-  { id:"ing-mayo",sku:"ING-006",name:"Mayonaise",category:"Saus",unit:"g",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
+  { id:"ing-chili",sku:"ING-005",name:"Saus Chili",category:"Saus",unit:"ml",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
+  { id:"ing-mayo",sku:"ING-006",name:"Mayonaise",category:"Saus",unit:"ml",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
   { id:"ing-chicken-fillet",sku:"ING-007",name:"Ayam Fillet",category:"Protein",unit:"g",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
   { id:"ing-oil",sku:"ING-008",name:"Minyak Goreng",category:"Bahan utama",unit:"ml",packageSize:"1 L",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
   { id:"ing-parsley",sku:"ING-009",name:"Parsley",category:"Topping",unit:"g",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
   { id:"ing-packaging",sku:"ING-010",name:"Packaging",category:"Packaging",unit:"pcs",packageSize:"1 pcs",stock:0,minStock:0,costPerUnit:0,updatedAt:now() }
 ];
 const recipes: RecipeRecord[] = [
-  { id:"recipe-mc-cheese-s",productId:"mc-cheese-s",items:[],updatedAt:now() },
-  { id:"recipe-mc-cheese-m",productId:"mc-cheese-m",items:[],updatedAt:now() },
-  { id:"recipe-mc-cheese-l",productId:"mc-cheese-l",items:[],updatedAt:now() },
-  { id:"recipe-mc-bolognese-s",productId:"mc-bolognese-s",items:[],updatedAt:now() },
-  { id:"recipe-mc-bolognese-m",productId:"mc-bolognese-m",items:[],updatedAt:now() },
-  { id:"recipe-mc-bolognese-l",productId:"mc-bolognese-l",items:[],updatedAt:now() },
-  { id:"recipe-mc-chicken-crispy-s",productId:"mc-chicken-crispy-s",items:[],updatedAt:now() },
-  { id:"recipe-mc-chicken-crispy-m",productId:"mc-chicken-crispy-m",items:[],updatedAt:now() },
-  { id:"recipe-mc-chicken-crispy-l",productId:"mc-chicken-crispy-l",items:[],updatedAt:now() },
-  { id:"recipe-mc-bol-chicken-crispy-s",productId:"mc-bol-chicken-crispy-s",items:[],updatedAt:now() },
-  { id:"recipe-mc-bol-chicken-crispy-m",productId:"mc-bol-chicken-crispy-m",items:[],updatedAt:now() },
-  { id:"recipe-mc-bol-chicken-crispy-l",productId:"mc-bol-chicken-crispy-l",items:[],updatedAt:now() }
+  { id:"recipe-mc-cheese-s",productId:"mc-cheese-s",items:[
+    {ingredientId:"ing-macaroni",quantity:80,unit:"g",estimated:true},
+    {ingredientId:"ing-cheese",quantity:20,unit:"g",estimated:true},
+    {ingredientId:"ing-chili",quantity:5,unit:"ml",estimated:true},
+    {ingredientId:"ing-mayo",quantity:5,unit:"ml",estimated:true},
+    {ingredientId:"ing-oil",quantity:2,unit:"ml",estimated:true},
+    {ingredientId:"ing-parsley",quantity:1,unit:"g"},
+    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+  ],updatedAt:now() },
+  { id:"recipe-mc-cheese-m",productId:"mc-cheese-m",items:[
+    {ingredientId:"ing-macaroni",quantity:120,unit:"g"},
+    {ingredientId:"ing-cheese",quantity:40,unit:"ml"},
+    {ingredientId:"ing-chili",quantity:10,unit:"ml"},
+    {ingredientId:"ing-mayo",quantity:10,unit:"ml"},
+    {ingredientId:"ing-oil",quantity:3,unit:"ml"},
+    {ingredientId:"ing-parsley",quantity:1,unit:"g"},
+    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+  ],updatedAt:now() },
+  { id:"recipe-mc-cheese-l",productId:"mc-cheese-l",items:[
+    {ingredientId:"ing-macaroni",quantity:160,unit:"g"},
+    {ingredientId:"ing-cheese",quantity:60,unit:"ml"},
+    {ingredientId:"ing-chili",quantity:20,unit:"ml"},
+    {ingredientId:"ing-mayo",quantity:20,unit:"ml"},
+    {ingredientId:"ing-oil",quantity:5,unit:"ml"},
+    {ingredientId:"ing-parsley",quantity:1,unit:"g"},
+    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+  ],updatedAt:now() },
+
+  { id:"recipe-mc-bolognese-s",productId:"mc-bolognese-s",items:[
+    {ingredientId:"ing-macaroni",quantity:80,unit:"g",estimated:true},
+    {ingredientId:"ing-sauce-bolognese",quantity:5,unit:"g",estimated:true},
+    {ingredientId:"ing-cheese",quantity:20,unit:"ml",estimated:true},
+    {ingredientId:"ing-chili",quantity:5,unit:"ml",estimated:true},
+    {ingredientId:"ing-mayo",quantity:5,unit:"ml",estimated:true},
+    {ingredientId:"ing-oil",quantity:2,unit:"ml",estimated:true},
+    {ingredientId:"ing-parsley",quantity:1,unit:"g"},
+    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+  ],updatedAt:now() },
+  { id:"recipe-mc-bolognese-m",productId:"mc-bolognese-m",items:[
+    {ingredientId:"ing-macaroni",quantity:120,unit:"g"},
+    {ingredientId:"ing-sauce-bolognese",quantity:10,unit:"g"},
+    {ingredientId:"ing-cheese",quantity:40,unit:"ml"},
+    {ingredientId:"ing-chili",quantity:10,unit:"ml"},
+    {ingredientId:"ing-mayo",quantity:10,unit:"ml"},
+    {ingredientId:"ing-oil",quantity:3,unit:"ml"},
+    {ingredientId:"ing-parsley",quantity:1,unit:"g"},
+    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+  ],updatedAt:now() },
+  { id:"recipe-mc-bolognese-l",productId:"mc-bolognese-l",items:[
+    {ingredientId:"ing-macaroni",quantity:160,unit:"g"},
+    {ingredientId:"ing-sauce-bolognese",quantity:15,unit:"g"},
+    {ingredientId:"ing-cheese",quantity:60,unit:"ml"},
+    {ingredientId:"ing-chili",quantity:20,unit:"ml"},
+    {ingredientId:"ing-mayo",quantity:20,unit:"ml"},
+    {ingredientId:"ing-oil",quantity:5,unit:"ml"},
+    {ingredientId:"ing-parsley",quantity:1,unit:"g"},
+    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+  ],updatedAt:now() },
+
+  { id:"recipe-mc-chicken-crispy-s",productId:"mc-chicken-crispy-s",items:[
+    {ingredientId:"ing-macaroni",quantity:80,unit:"g",estimated:true},
+    {ingredientId:"ing-cheese",quantity:20,unit:"ml",estimated:true},
+    {ingredientId:"ing-chili",quantity:5,unit:"ml",estimated:true},
+    {ingredientId:"ing-mayo",quantity:5,unit:"ml",estimated:true},
+    {ingredientId:"ing-oil",quantity:2,unit:"ml",estimated:true},
+    {ingredientId:"ing-chicken-fillet",quantity:25,unit:"g",estimated:true},
+    {ingredientId:"ing-topping-crispy",quantity:25,unit:"g",estimated:true},
+    {ingredientId:"ing-parsley",quantity:1,unit:"g"},
+    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+  ],updatedAt:now() },
+  { id:"recipe-mc-chicken-crispy-m",productId:"mc-chicken-crispy-m",items:[
+    {ingredientId:"ing-macaroni",quantity:120,unit:"g"},
+    {ingredientId:"ing-cheese",quantity:40,unit:"ml"},
+    {ingredientId:"ing-chili",quantity:10,unit:"ml"},
+    {ingredientId:"ing-mayo",quantity:10,unit:"ml"},
+    {ingredientId:"ing-oil",quantity:3,unit:"ml"},
+    {ingredientId:"ing-chicken-fillet",quantity:50,unit:"g"},
+    {ingredientId:"ing-topping-crispy",quantity:50,unit:"g"},
+    {ingredientId:"ing-parsley",quantity:1,unit:"g"},
+    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+  ],updatedAt:now() },
+  { id:"recipe-mc-chicken-crispy-l",productId:"mc-chicken-crispy-l",items:[
+    {ingredientId:"ing-macaroni",quantity:160,unit:"g"},
+    {ingredientId:"ing-cheese",quantity:60,unit:"ml"},
+    {ingredientId:"ing-chili",quantity:20,unit:"ml"},
+    {ingredientId:"ing-mayo",quantity:20,unit:"ml"},
+    {ingredientId:"ing-oil",quantity:5,unit:"ml"},
+    {ingredientId:"ing-chicken-fillet",quantity:50,unit:"g"},
+    {ingredientId:"ing-topping-crispy",quantity:50,unit:"g"},
+    {ingredientId:"ing-parsley",quantity:1,unit:"g"},
+    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+  ],updatedAt:now() },
+
+  { id:"recipe-mc-bol-chicken-crispy-s",productId:"mc-bol-chicken-crispy-s",items:[
+    {ingredientId:"ing-macaroni",quantity:80,unit:"g",estimated:true},
+    {ingredientId:"ing-sauce-bolognese",quantity:5,unit:"g",estimated:true},
+    {ingredientId:"ing-cheese",quantity:20,unit:"ml",estimated:true},
+    {ingredientId:"ing-chili",quantity:5,unit:"ml",estimated:true},
+    {ingredientId:"ing-mayo",quantity:5,unit:"ml",estimated:true},
+    {ingredientId:"ing-oil",quantity:2,unit:"ml",estimated:true},
+    {ingredientId:"ing-chicken-fillet",quantity:25,unit:"g",estimated:true},
+    {ingredientId:"ing-topping-crispy",quantity:25,unit:"g",estimated:true},
+    {ingredientId:"ing-parsley",quantity:1,unit:"g"},
+    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+  ],updatedAt:now() },
+  { id:"recipe-mc-bol-chicken-crispy-m",productId:"mc-bol-chicken-crispy-m",items:[
+    {ingredientId:"ing-macaroni",quantity:120,unit:"g"},
+    {ingredientId:"ing-sauce-bolognese",quantity:10,unit:"g"},
+    {ingredientId:"ing-cheese",quantity:40,unit:"ml"},
+    {ingredientId:"ing-chili",quantity:10,unit:"ml"},
+    {ingredientId:"ing-mayo",quantity:10,unit:"ml"},
+    {ingredientId:"ing-oil",quantity:3,unit:"ml"},
+    {ingredientId:"ing-chicken-fillet",quantity:50,unit:"g"},
+    {ingredientId:"ing-topping-crispy",quantity:50,unit:"g"},
+    {ingredientId:"ing-parsley",quantity:1,unit:"g"},
+    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+  ],updatedAt:now() },
+  { id:"recipe-mc-bol-chicken-crispy-l",productId:"mc-bol-chicken-crispy-l",items:[
+    {ingredientId:"ing-macaroni",quantity:160,unit:"g"},
+    {ingredientId:"ing-sauce-bolognese",quantity:15,unit:"g"},
+    {ingredientId:"ing-cheese",quantity:60,unit:"ml"},
+    {ingredientId:"ing-chili",quantity:20,unit:"ml"},
+    {ingredientId:"ing-mayo",quantity:20,unit:"ml"},
+    {ingredientId:"ing-oil",quantity:5,unit:"ml"},
+    {ingredientId:"ing-chicken-fillet",quantity:50,unit:"g"},
+    {ingredientId:"ing-topping-crispy",quantity:50,unit:"g"},
+    {ingredientId:"ing-parsley",quantity:1,unit:"g"},
+    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+  ],updatedAt:now() }
 ];
 export async function seedDatabase(){
   if(await db.outlets.count()===0) await db.outlets.add(outlet);
@@ -100,8 +217,7 @@ export async function seedDatabase(){
   }
 
   for (const recipe of recipes) {
-    const existing = await db.recipes.get(recipe.id);
-    if (!existing) await db.recipes.add(recipe);
+    await db.recipes.put(recipe);
   }
 
   const currentProducts=await db.products.toArray();
