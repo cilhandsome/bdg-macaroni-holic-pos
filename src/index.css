@@ -52,6 +52,8 @@ button { cursor: pointer; }
 .success-banner strong, .success-banner span { display: block; }
 .success-banner span { margin-top: 3px; font-size: 12px; }
 .success-banner button { border: 0; background: transparent; font-weight: 800; color: #166534; }
+.error-banner { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 13px 15px; margin-bottom: 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; color: #991b1b; }
+.error-banner button { border: 0; background: transparent; color: #991b1b; font-weight: 800; }
 .product-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .menu-card { border: 1px solid #e5e7eb; background: #fff; border-radius: 16px; padding: 12px; text-align: left; display: grid; grid-template-columns: 64px minmax(0, 1fr) 34px; gap: 12px; align-items: center; min-height: 108px; transition: transform .1s ease, box-shadow .1s ease, border-color .1s ease; }
 .menu-card:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,.06); border-color: #d4d4d4; }
