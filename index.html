@@ -10,6 +10,21 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Development safety: prevent an old service worker from serving stale localhost bundles.
+      if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function (registrations) {
+            registrations.forEach(function (registration) { registration.unregister(); });
+          });
+        }
+        if ("caches" in window) {
+          caches.keys().then(function (keys) {
+            keys.forEach(function (key) { caches.delete(key); });
+          });
+        }
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
