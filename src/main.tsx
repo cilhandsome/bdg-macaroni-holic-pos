@@ -31,36 +31,28 @@ class RootErrorBoundary extends Component<{ children: ReactNode }, { error: stri
   }
 }
 
-async function prepareServiceWorker() {
-  if (!("serviceWorker" in navigator)) return;
-
-  if (import.meta.env.PROD) {
-    await navigator.serviceWorker.register("./sw.js");
-    return;
+async function clearOldLocalRuntime() {
+  if (location.hostname !== "localhost" && location.hostname !== "127.0.0.1") return;
+  if ("serviceWorker" in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
   }
-
-  const registrations = await navigator.serviceWorker.getRegistrations();
-  await Promise.all(registrations.map((registration) => registration.unregister()));
-
   if ("caches" in window) {
     const keys = await caches.keys();
     await Promise.all(keys.map((key) => caches.delete(key)));
   }
 }
 
-window.addEventListener("error", (event) => {
-  console.error("Window error", event.error || event.message);
-});
-window.addEventListener("unhandledrejection", (event) => {
-  console.error("Unhandled promise rejection", event.reason);
-});
+window.addEventListener("error", (event) => console.error("Window error", event.error || event.message));
+window.addEventListener("unhandledrejection", (event) => console.error("Unhandled promise rejection", event.reason));
 
-void prepareServiceWorker();
-
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <RootErrorBoundary>
-      <App />
-    </RootErrorBoundary>
-  </StrictMode>,
-);
+void (async () => {
+  await clearOldLocalRuntime();
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <RootErrorBoundary>
+        <App />
+      </RootErrorBoundary>
+    </StrictMode>,
+  );
+})();
