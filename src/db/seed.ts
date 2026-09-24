@@ -7,18 +7,15 @@ const users: UserRecord[] = [
 ];
 const suppliers: SupplierRecord[] = [{ id:"supplier-default", name:"Supplier Utama", phone:"", address:"", updatedAt:now() }];
 const products: ProductRecord[] = [
-  { id:"mac-cheese",sku:"MH-MAC-001",name:"Mac & Cheese",category:"Macaroni",price:25000,stock:0,emoji:"🧀",active:true,trackStock:false,updatedAt:now() },
-  { id:"mac-beef",sku:"MH-MAC-002",name:"Mac & Beef",category:"Macaroni",price:30000,stock:0,emoji:"🥩",active:true,trackStock:false,updatedAt:now() },
-  { id:"spicy-mac",sku:"MH-MAC-003",name:"Spicy Macaroni",category:"Macaroni",price:27000,stock:0,emoji:"🌶️",active:true,trackStock:false,updatedAt:now() },
-  { id:"mac-chicken",sku:"MH-MAC-004",name:"Mac & Chicken",category:"Macaroni",price:28000,stock:0,emoji:"🍗",active:true,trackStock:false,updatedAt:now() },
-  { id:"fries",sku:"MH-SNK-001",name:"French Fries",category:"Snack",price:15000,stock:25,emoji:"🍟",active:true,trackStock:true,updatedAt:now() },
-  { id:"sausage",sku:"MH-SNK-002",name:"Sausage",category:"Snack",price:17000,stock:20,emoji:"🌭",active:true,trackStock:true,updatedAt:now() },
-  { id:"chicken-nugget",sku:"MH-SNK-003",name:"Chicken Nugget",category:"Snack",price:18000,stock:16,emoji:"🍗",active:true,trackStock:true,updatedAt:now() },
-  { id:"iced-tea",sku:"MH-DRK-001",name:"Iced Tea",category:"Drink",price:8000,stock:40,emoji:"🧋",active:true,trackStock:true,updatedAt:now() },
-  { id:"mineral",sku:"MH-DRK-002",name:"Mineral Water",category:"Drink",price:6000,stock:50,emoji:"💧",active:true,trackStock:true,updatedAt:now() },
-  { id:"cola",sku:"MH-DRK-003",name:"Cola",category:"Drink",price:9000,stock:32,emoji:"🥤",active:true,trackStock:true,updatedAt:now() },
-  { id:"extra-cheese",sku:"MH-TOP-001",name:"Extra Cheese",category:"Topping",price:6000,stock:30,emoji:"🧀",active:true,trackStock:true,updatedAt:now() },
-  { id:"extra-beef",sku:"MH-TOP-002",name:"Extra Beef",category:"Topping",price:9000,stock:14,emoji:"🥩",active:true,trackStock:true,updatedAt:now() }
+  { id:"mc-cheese-s",sku:"MH-MC-001-S",name:"Macaroni Cheese S",category:"Macaroni",price:0,stock:0,emoji:"🧀",active:true,trackStock:false,size:"S",updatedAt:now() },
+  { id:"mc-cheese-m",sku:"MH-MC-001-M",name:"Macaroni Cheese M",category:"Macaroni",price:0,stock:0,emoji:"🧀",active:true,trackStock:false,size:"M",updatedAt:now() },
+  { id:"mc-cheese-l",sku:"MH-MC-001-L",name:"Macaroni Cheese L",category:"Macaroni",price:0,stock:0,emoji:"🧀",active:true,trackStock:false,size:"L",updatedAt:now() },
+  { id:"mc-bolognese-s",sku:"MH-MC-002-S",name:"Macaroni Cheese Bolognese S",category:"Macaroni",price:0,stock:0,emoji:"🍝",active:true,trackStock:false,size:"S",updatedAt:now() },
+  { id:"mc-bolognese-m",sku:"MH-MC-002-M",name:"Macaroni Cheese Bolognese M",category:"Macaroni",price:0,stock:0,emoji:"🍝",active:true,trackStock:false,size:"M",updatedAt:now() },
+  { id:"mc-bolognese-l",sku:"MH-MC-002-L",name:"Macaroni Cheese Bolognese L",category:"Macaroni",price:0,stock:0,emoji:"🍝",active:true,trackStock:false,size:"L",updatedAt:now() },
+  { id:"mc-chicken-crispy-s",sku:"MH-MC-003-S",name:"Macaroni Cheese Chicken Crispy S",category:"Macaroni",price:0,stock:0,emoji:"🍗",active:true,trackStock:false,size:"S",updatedAt:now() },
+  { id:"mc-chicken-crispy-m",sku:"MH-MC-003-M",name:"Macaroni Cheese Chicken Crispy M",category:"Macaroni",price:0,stock:0,emoji:"🍗",active:true,trackStock:false,size:"M",updatedAt:now() },
+  { id:"mc-chicken-crispy-l",sku:"MH-MC-003-L",name:"Macaroni Cheese Chicken Crispy L",category:"Macaroni",price:0,stock:0,emoji:"🍗",active:true,trackStock:false,size:"L",updatedAt:now() }
 ];
 const ingredients: IngredientRecord[] = [
   { id:"ing-macaroni",sku:"ING-001",name:"Macaroni",category:"Bahan utama",unit:"g",stock:15000,minStock:3000,costPerUnit:22,updatedAt:now() },
@@ -42,6 +39,19 @@ export async function seedDatabase(){
   if(await db.users.count()===0) await db.users.bulkAdd(users);
   if(await db.suppliers.count()===0) await db.suppliers.bulkAdd(suppliers);
   if(await db.products.count()===0) await db.products.bulkAdd(products);
+  const temporaryDemoIds = [
+    "mac-cheese","mac-beef","spicy-mac","mac-chicken",
+    "fries","sausage","chicken-nugget","iced-tea","mineral","cola","extra-cheese","extra-beef"
+  ];
+  for (const id of temporaryDemoIds) {
+    await db.recipes.where("productId").equals(id).delete();
+    await db.products.delete(id);
+  }
+  if (await db.products.where("category").equals("Macaroni").count() < products.length) {
+    for (const product of products) {
+      if (!(await db.products.get(product.id))) await db.products.add(product);
+    }
+  }
   if(await db.ingredients.count()===0) await db.ingredients.bulkAdd(ingredients);
   if(await db.recipes.count()===0) await db.recipes.bulkAdd(recipes);
 
