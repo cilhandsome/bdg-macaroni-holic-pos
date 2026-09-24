@@ -24,16 +24,16 @@ const products: ProductRecord[] = [
   { id:"mc-bol-chicken-crispy-l",sku:"MH-MC-004-L",name:"Macaroni Cheese Bolognese Chicken Crispy L",category:"Macaroni",price:20000,stock:0,emoji:"🍝",active:true,trackStock:false,size:"L",updatedAt:now() }
 ];
 const ingredients: IngredientRecord[] = [
-  { id:"ing-macaroni",sku:"ING-001",name:"Macaroni Special Khas KKI",category:"Bahan utama",unit:"g",packageSize:"800 gr",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
-  { id:"ing-topping-crispy",sku:"ING-002",name:"Tepung Crispy Istimewa",category:"Pelapis",unit:"g",packageSize:"800 gr",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
-  { id:"ing-sauce-bolognese",sku:"ING-003",name:"Saus Bolognese Special KKI",category:"Saus",unit:"g",packageSize:"500 gr",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
-  { id:"ing-cheese",sku:"ING-004",name:"Bubuk Keju Super Khas KKI",category:"Saus",unit:"g",packageSize:"200 gr",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
-  { id:"ing-chili",sku:"ING-005",name:"Saus Chili",category:"Saus",unit:"ml",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
-  { id:"ing-mayo",sku:"ING-006",name:"Mayonaise",category:"Saus",unit:"ml",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
-  { id:"ing-chicken-fillet",sku:"ING-007",name:"Ayam Fillet",category:"Protein",unit:"g",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
-  { id:"ing-oil",sku:"ING-008",name:"Minyak Goreng",category:"Bahan utama",unit:"ml",packageSize:"1 L",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
-  { id:"ing-parsley",sku:"ING-009",name:"Parsley",category:"Topping",unit:"g",stock:0,minStock:0,costPerUnit:0,updatedAt:now() },
-  { id:"ing-packaging",sku:"ING-010",name:"Packaging",category:"Packaging",unit:"pcs",packageSize:"1 pcs",stock:0,minStock:0,costPerUnit:0,updatedAt:now() }
+  { id:"ing-macaroni",sku:"ING-001",name:"Macaroni Special Khas KKI",category:"Bahan utama",unit:"g",packageSize:"800 gr",stock:0,minStock:0,costPerUnit:26.25,includeInHpp:true,priceMode:"RO",updatedAt:now() },
+  { id:"ing-topping-crispy",sku:"ING-002",name:"Tepung Crispy Istimewa",category:"Pelapis",unit:"g",packageSize:"800 gr",stock:0,minStock:0,costPerUnit:21.25,includeInHpp:true,priceMode:"RO",updatedAt:now() },
+  { id:"ing-sauce-bolognese",sku:"ING-003",name:"Saus Bolognese Special KKI",category:"Saus",unit:"g",packageSize:"500 gr",stock:0,minStock:0,costPerUnit:50,includeInHpp:true,priceMode:"RO",updatedAt:now() },
+  { id:"ing-cheese",sku:"ING-004",name:"Bubuk Keju Super Khas KKI",category:"Saus",unit:"g",packageSize:"200 gr",stock:0,minStock:0,costPerUnit:140,includeInHpp:true,priceMode:"RO",updatedAt:now() },
+  { id:"ing-chili",sku:"ING-005",name:"Saus Chili",category:"Saus",unit:"ml",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:35,includeInHpp:true,priceMode:"RO",updatedAt:now() },
+  { id:"ing-mayo",sku:"ING-006",name:"Mayonaise",category:"Saus",unit:"ml",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:30,includeInHpp:true,priceMode:"RO",updatedAt:now() },
+  { id:"ing-chicken-fillet",sku:"ING-007",name:"Ayam Fillet",category:"Protein",unit:"g",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:58,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
+  { id:"ing-oil",sku:"ING-008",name:"Minyak Goreng",category:"Bahan utama",unit:"ml",packageSize:"1 L",stock:0,minStock:0,costPerUnit:22.6,includeInHpp:false,priceMode:"MARKET",updatedAt:now() },
+  { id:"ing-parsley",sku:"ING-009",name:"Parsley",category:"Topping",unit:"g",packageSize:"",stock:0,minStock:0,costPerUnit:0,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
+  { id:"ing-packaging",sku:"ING-010",name:"Packaging",category:"Packaging",unit:"pcs",packageSize:"1 pcs",stock:0,minStock:0,costPerUnit:0,includeInHpp:true,priceMode:"MARKET",updatedAt:now() }
 ];
 const recipes: RecipeRecord[] = [
   { id:"recipe-mc-cheese-s",productId:"mc-cheese-s",items:[
@@ -214,6 +214,11 @@ export async function seedDatabase(){
   for (const ingredient of ingredients) {
     const existing = await db.ingredients.get(ingredient.id);
     if (!existing) await db.ingredients.add(ingredient);
+    else await db.ingredients.update(ingredient.id, {
+      name: ingredient.name, sku: ingredient.sku, category: ingredient.category, unit: ingredient.unit,
+      packageSize: ingredient.packageSize, costPerUnit: ingredient.costPerUnit,
+      includeInHpp: ingredient.includeInHpp, priceMode: ingredient.priceMode, updatedAt: now()
+    });
   }
 
   for (const recipe of recipes) {
