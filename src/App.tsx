@@ -22,12 +22,16 @@ export default function App() {
   const [lastOrder, setLastOrder] = useState<string | null>(null);
   const [dbReady, setDbReady] = useState(false);
   const [error, setError] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [receiptSale, setReceiptSale] = useState<Awaited<ReturnType<typeof db.sales.toArray>>[number] | null>(null);
+  const [sales, setSales] = useState<Awaited<ReturnType<typeof db.sales.toArray>>>([]);
 
   useEffect(() => {
     void (async () => {
       try {
         await seedDatabase();
         setProducts(await loadActiveProducts());
+        setSales(await db.sales.orderBy("createdAt").reverse().limit(50).toArray());
         setDbReady(true);
       } catch (err) {
         console.error(err);
@@ -104,6 +108,7 @@ export default function App() {
       });
 
       setProducts(await loadActiveProducts());
+      setSales(await db.sales.orderBy("createdAt").reverse().limit(50).toArray());
       setLastOrder(invoiceNo);
       setIsPaymentOpen(false);
       setCart([]);
@@ -128,7 +133,7 @@ export default function App() {
           <div className="shift-text">Shift: Pagi · Kasir: Admin</div>
         </div>
         <div className="topbar-actions">
-          <button className="icon-button" type="button" title="Riwayat">↺</button>
+          <button className="icon-button" type="button" title="Riwayat Transaksi" onClick={() => setHistoryOpen(true)}>↺</button>
           <button className="cashier-button" type="button">Admin ▾</button>
         </div>
       </header>
@@ -206,6 +211,69 @@ export default function App() {
           </div>
         </aside>
       </div>
+
+      {historyOpen && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="history-modal">
+            <div className="modal-head">
+              <div><div className="page-kicker">Transaksi</div><h2>Riwayat Penjualan</h2></div>
+              <button type="button" className="close-modal" onClick={() => setHistoryOpen(false)}>×</button>
+            </div>
+            <div className="history-list">
+              {sales.length === 0 ? (
+                <div className="history-empty">Belum ada transaksi.</div>
+              ) : (
+                sales.map((sale) => (
+                  <button key={sale.id} type="button" className="history-row" onClick={() => setReceiptSale(sale)}>
+                    <div>
+                      <strong>{sale.invoiceNo}</strong>
+                      <span>{new Date(sale.createdAt).toLocaleString("id-ID")} · {sale.paymentMethod}</span>
+                    </div>
+                    <div className="history-total">{formatRupiah(sale.total)}</div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {receiptSale && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="receipt-modal">
+            <div className="modal-head no-print">
+              <div><div className="page-kicker">Detail Transaksi</div><h2>Struk</h2></div>
+              <button type="button" className="close-modal" onClick={() => setReceiptSale(null)}>×</button>
+            </div>
+            <div className="receipt-sheet" id="receipt-print">
+              <div className="receipt-brand">MACARONI HOLIC</div>
+              <div className="receipt-muted">Outlet Bandung 01</div>
+              <div className="receipt-divider" />
+              <div className="receipt-meta"><span>No.</span><strong>{receiptSale.invoiceNo}</strong></div>
+              <div className="receipt-meta"><span>Tanggal</span><strong>{new Date(receiptSale.createdAt).toLocaleString("id-ID")}</strong></div>
+              <div className="receipt-meta"><span>Tipe</span><strong>{receiptSale.orderType}{receiptSale.tableNumber ? " · Meja " + receiptSale.tableNumber : ""}</strong></div>
+              <div className="receipt-divider" />
+              {receiptSale.items.map((item) => (
+                <div className="receipt-item" key={item.productId}>
+                  <div><strong>{item.name}</strong><span>{item.qty} × {formatRupiah(item.price)}</span></div>
+                  <strong>{formatRupiah(item.qty * item.price)}</strong>
+                </div>
+              ))}
+              <div className="receipt-divider" />
+              <div className="receipt-meta"><span>Subtotal</span><strong>{formatRupiah(receiptSale.subtotal)}</strong></div>
+              <div className="receipt-meta"><span>Diskon</span><strong>{formatRupiah(receiptSale.discount)}</strong></div>
+              <div className="receipt-total"><span>Total</span><strong>{formatRupiah(receiptSale.total)}</strong></div>
+              <div className="receipt-meta"><span>Pembayaran</span><strong>{receiptSale.paymentMethod}</strong></div>
+              {receiptSale.paymentMethod === "Cash" && <div className="receipt-meta"><span>Kembali</span><strong>{formatRupiah(receiptSale.change)}</strong></div>}
+              <div className="receipt-thanks">Terima kasih.</div>
+            </div>
+            <div className="receipt-actions no-print">
+              <button type="button" className="secondary-button" onClick={() => window.print()}>Cetak Struk</button>
+              <button type="button" className="confirm-pay" onClick={() => setReceiptSale(null)}>Selesai</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isPaymentOpen && (
         <div className="modal-backdrop" role="dialog" aria-modal="true">
