@@ -398,7 +398,7 @@ export default function App(){
 
       {view==="dashboard"&&<Dashboard sales={todaySales} revenue={todayRevenue} cogs={todayCogs} expense={todayExpense} lowStock={lowStock}/>}
       {view==="pos"&&<POS categories={availableCategories} category={category} setCategory={setCategory} products={filteredProducts} query={query} setQuery={setQuery} addCart={addCart} cart={cart} clearCart={()=>setCart([])} changeQty={changeQty} total={total} cartSubtotal={cartSubtotal} orderType={orderType} setOrderType={setOrderType} tableNumber={tableNumber} setTableNumber={setTableNumber} onPay={()=>setPaymentOpen(true)}/>}
-      {view==="history"&&<History sales={sales} onOpen={setReceiptSale} onClear={()=>void clearTransactionHistory()}/>
+      {view==="history"&&<History sales={sales} onOpen={setReceiptSale} onClear={()=>void clearTransactionHistory()}/>} 
       {view==="products"&&<Products products={products} form={productForm} setForm={setProductForm} onSave={()=>void saveProduct()}/>}
       {view==="ingredients"&&<Ingredients ingredients={ingredients} lowStock={lowStock} form={ingredientForm} setForm={setIngredientForm} onSave={()=>void saveIngredient()} onEdit={editIngredient} onReset={resetIngredientForm}/>} 
       {view==="recipes"&&<Recipes products={products} ingredients={ingredients} recipes={recipes} form={recipeForm} setForm={setRecipeForm} cost={recipeCost} onAdd={()=>void addRecipeItem()} onRemove={(r,i)=>void removeRecipeItem(r,i)}/>}
