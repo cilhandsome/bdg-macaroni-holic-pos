@@ -98,7 +98,7 @@ export default function App(){
     const invoice="MH-"+today().replaceAll("-","")+"-"+String(Date.now()).slice(-5); const createdAt=new Date().toISOString();
     try{
       let created:SaleRecord|null=null;
-      await db.transaction("rw",[db.products,db.ingredients,db.recipes,db.sales,db.stockMovements,db.syncQueue],async()=>{
+      await db.transaction("rw",db.products,db.ingredients,db.recipes,db.sales,db.stockMovements,async()=>{
         let cogs=0;
         for(const item of cart){
           const p=await db.products.get(item.id); if(!p)throw new Error("Produk tidak ditemukan.");
@@ -120,8 +120,8 @@ export default function App(){
         }
         created={id:crypto.randomUUID(),invoiceNo:invoice,orderType,tableNumber:orderType==="Dine In"?tableNumber:"",paymentMethod,subtotal:cartSubtotal,discount:0,total,cashReceived:paymentMethod==="Cash"?received:total,change:paymentMethod==="Cash"?change:0,costOfGoods:cogs,items:cart.map(i=>({productId:i.id,name:i.name,price:i.price,qty:i.qty,cost:recipeCost(i.id)})),createdAt,outletId:context.outlet.id,userId:context.user.id,synced:false};
         await db.sales.add(created);
-        await db.syncQueue.add({id:crypto.randomUUID(),tableName:"sales",recordId:created.id,createdAt,attempts:0,synced:false});
       });
+      await db.syncQueue.add({id:crypto.randomUUID(),tableName:"sales",recordId:created.id,createdAt,attempts:0,synced:false});
       await refresh(); if(created)setReceiptSale(created); setCart([]);setCashReceived("");setTableNumber("");setPaymentOpen(false);setNotice(invoice+" tersimpan di perangkat.");
     }catch(e){setError(e instanceof Error?e.message:"Transaksi gagal.");}
   }
@@ -193,13 +193,24 @@ export default function App(){
   async function restore(file:File){
     try{
       const p=JSON.parse(await file.text()) as Record<string,unknown[]>;
-      await db.transaction("rw",db.tables,async()=>{
-        await Promise.all([db.products.clear(),db.ingredients.clear(),db.recipes.clear(),db.suppliers.clear(),db.purchases.clear(),db.stockMovements.clear(),db.sales.clear(),db.shifts.clear(),db.expenses.clear(),db.outlets.clear(),db.users.clear(),db.auditLogs.clear(),db.settings.clear()]);
-        if(p.products)await db.products.bulkAdd(p.products as ProductRecord[]);if(p.ingredients)await db.ingredients.bulkAdd(p.ingredients as IngredientRecord[]);if(p.recipes)await db.recipes.bulkAdd(p.recipes as RecipeRecord[]);
-        if(p.suppliers)await db.suppliers.bulkAdd(p.suppliers as SupplierRecord[]);if(p.purchases)await db.purchases.bulkAdd(p.purchases as PurchaseRecord[]);if(p.stockMovements)await db.stockMovements.bulkAdd(p.stockMovements as StockMovementRecord[]);
-        if(p.sales)await db.sales.bulkAdd(p.sales as SaleRecord[]);if(p.shifts)await db.shifts.bulkAdd(p.shifts as ShiftRecord[]);if(p.expenses)await db.expenses.bulkAdd(p.expenses as ExpenseRecord[]);
-        if(p.outlets)await db.outlets.bulkAdd(p.outlets as OutletRecord[]);if(p.users)await db.users.bulkAdd(p.users as UserRecord[]);if(p.auditLogs)await db.auditLogs.bulkAdd(p.auditLogs as any[]);if(p.settings)await db.settings.bulkAdd(p.settings as any[]);
-      });await refresh();setNotice("Backup dipulihkan.");
+      await Promise.all([
+        db.products.clear(),db.ingredients.clear(),db.recipes.clear(),db.suppliers.clear(),db.purchases.clear(),db.stockMovements.clear(),
+        db.sales.clear(),db.shifts.clear(),db.expenses.clear(),db.outlets.clear(),db.users.clear(),db.auditLogs.clear(),db.settings.clear()
+      ]);
+      if(p.products)await db.products.bulkAdd(p.products as ProductRecord[]);
+      if(p.ingredients)await db.ingredients.bulkAdd(p.ingredients as IngredientRecord[]);
+      if(p.recipes)await db.recipes.bulkAdd(p.recipes as RecipeRecord[]);
+      if(p.suppliers)await db.suppliers.bulkAdd(p.suppliers as SupplierRecord[]);
+      if(p.purchases)await db.purchases.bulkAdd(p.purchases as PurchaseRecord[]);
+      if(p.stockMovements)await db.stockMovements.bulkAdd(p.stockMovements as StockMovementRecord[]);
+      if(p.sales)await db.sales.bulkAdd(p.sales as SaleRecord[]);
+      if(p.shifts)await db.shifts.bulkAdd(p.shifts as ShiftRecord[]);
+      if(p.expenses)await db.expenses.bulkAdd(p.expenses as ExpenseRecord[]);
+      if(p.outlets)await db.outlets.bulkAdd(p.outlets as OutletRecord[]);
+      if(p.users)await db.users.bulkAdd(p.users as UserRecord[]);
+      if(p.auditLogs)await db.auditLogs.bulkAdd(p.auditLogs as any[]);
+      if(p.settings)await db.settings.bulkAdd(p.settings as any[]);
+      await refresh();setNotice("Backup dipulihkan.");
     }catch(e){setError("Backup tidak valid atau gagal dipulihkan.");}
   }
   async function doSync(){
