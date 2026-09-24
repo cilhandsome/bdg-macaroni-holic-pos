@@ -98,29 +98,75 @@ export default function App(){
     const invoice="MH-"+today().replaceAll("-","")+"-"+String(Date.now()).slice(-5); const createdAt=new Date().toISOString();
     try{
       let created:SaleRecord|null=null;
-      await db.transaction("rw",db.products,db.ingredients,db.recipes,db.sales,db.stockMovements,async()=>{
-        let cogs=0;
-        for(const item of cart){
-          const p=await db.products.get(item.id); if(!p)throw new Error("Produk tidak ditemukan.");
-          const recipe=await db.recipes.where("productId").equals(p.id).first();
-          if(recipe){
-            for(const line of recipe.items){
-              const ing=await db.ingredients.get(line.ingredientId);
-              const needed=line.quantity*item.qty;
-              if(!ing||ing.stock<needed)throw new Error("Stok "+(ing?.name??"bahan")+" tidak mencukupi.");
-              await db.ingredients.update(ing.id,{stock:ing.stock-needed,updatedAt:createdAt});
-              await db.stockMovements.add({id:crypto.randomUUID(),ingredientId:ing.id,type:"OUT",quantity:needed,reason:"Penjualan "+invoice,referenceId:invoice,createdAt});
-              cogs+=ing.costPerUnit*line.quantity*item.qty;
-            }
-          }else if(p.trackStock){
-            if(p.stock<item.qty)throw new Error("Stok "+p.name+" tidak mencukupi.");
-            await db.products.update(p.id,{stock:p.stock-item.qty,updatedAt:createdAt});
-            cogs+=0;
+      const validated: Array<{ item: CartItem; recipe: RecipeRecord | undefined }> = [];
+      let cogs = 0;
+
+      for (const item of cart) {
+        const p = await db.products.get(item.id);
+        if (!p) throw new Error("Produk tidak ditemukan.");
+        const recipe = await db.recipes.where("productId").equals(p.id).first();
+        if (recipe) {
+          for (const line of recipe.items) {
+            const ing = await db.ingredients.get(line.ingredientId);
+            const needed = line.quantity * item.qty;
+            if (!ing || ing.stock < needed) throw new Error("Stok " + (ing?.name ?? "bahan") + " tidak mencukupi.");
+            cogs += ing.costPerUnit * line.quantity * item.qty;
           }
+        } else if (p.trackStock && p.stock < item.qty) {
+          throw new Error("Stok " + p.name + " tidak mencukupi.");
         }
-        created={id:crypto.randomUUID(),invoiceNo:invoice,orderType,tableNumber:orderType==="Dine In"?tableNumber:"",paymentMethod,subtotal:cartSubtotal,discount:0,total,cashReceived:paymentMethod==="Cash"?received:total,change:paymentMethod==="Cash"?change:0,costOfGoods:cogs,items:cart.map(i=>({productId:i.id,name:i.name,price:i.price,qty:i.qty,cost:recipeCost(i.id)})),createdAt,outletId:context.outlet.id,userId:context.user.id,synced:false};
-        await db.sales.add(created);
-      });
+        validated.push({ item, recipe });
+      }
+
+      for (const { item, recipe } of validated) {
+        if (recipe) {
+          for (const line of recipe.items) {
+            const ing = await db.ingredients.get(line.ingredientId);
+            if (!ing) throw new Error("Bahan resep tidak ditemukan.");
+            const needed = line.quantity * item.qty;
+            await db.ingredients.update(ing.id, { stock: ing.stock - needed, updatedAt: createdAt });
+            await db.stockMovements.add({
+              id: crypto.randomUUID(),
+              ingredientId: ing.id,
+              type: "OUT",
+              quantity: needed,
+              reason: "Penjualan " + invoice,
+              referenceId: invoice,
+              createdAt,
+            });
+          }
+        } else if (item.trackStock) {
+          const p = await db.products.get(item.id);
+          if (!p) throw new Error("Produk tidak ditemukan.");
+          await db.products.update(p.id, { stock: p.stock - item.qty, updatedAt: createdAt });
+        }
+      }
+
+      created = {
+        id: crypto.randomUUID(),
+        invoiceNo: invoice,
+        orderType,
+        tableNumber: orderType === "Dine In" ? tableNumber : "",
+        paymentMethod,
+        subtotal: cartSubtotal,
+        discount: 0,
+        total,
+        cashReceived: paymentMethod === "Cash" ? received : total,
+        change: paymentMethod === "Cash" ? change : 0,
+        costOfGoods: cogs,
+        items: cart.map(i => ({
+          productId: i.id,
+          name: i.name,
+          price: i.price,
+          qty: i.qty,
+          cost: recipeCost(i.id),
+        })),
+        createdAt,
+        outletId: context.outlet.id,
+        userId: context.user.id,
+        synced: false,
+      };
+      await db.sales.add(created);
       await db.syncQueue.add({id:crypto.randomUUID(),tableName:"sales",recordId:created.id,createdAt,attempts:0,synced:false});
       await refresh(); if(created)setReceiptSale(created); setCart([]);setCashReceived("");setTableNumber("");setPaymentOpen(false);setNotice(invoice+" tersimpan di perangkat.");
     }catch(e){setError(e instanceof Error?e.message:"Transaksi gagal.");}
@@ -152,20 +198,18 @@ export default function App(){
     const ing=ingredients.find(i=>i.id===purchaseForm.ingredientId);const qty=Number(purchaseForm.quantity)||0;const cost=Number(purchaseForm.totalCost)||0;
     if(!ing||qty<=0)return;
     const now=new Date().toISOString();const inv="PO-"+today().replaceAll("-","")+"-"+String(Date.now()).slice(-4);
-    await db.transaction("rw",db.ingredients,db.purchases,db.stockMovements,async()=>{
-      await db.ingredients.update(ing.id,{stock:ing.stock+qty,costPerUnit:cost/qty||ing.costPerUnit,updatedAt:now});
-      await db.purchases.add({id:crypto.randomUUID(),invoiceNo:inv,supplierId:purchaseForm.supplierId||"supplier-default",ingredientId:ing.id,quantity:qty,unit:ing.unit,totalCost:cost,unitCost:cost/qty||0,createdAt:now});
-      await db.stockMovements.add({id:crypto.randomUUID(),ingredientId:ing.id,type:"IN",quantity:qty,reason:"Pembelian "+inv,createdAt:now});
-    });
+    await db.ingredients.update(ing.id,{stock:ing.stock+qty,costPerUnit:cost/qty||ing.costPerUnit,updatedAt:now});
+    await db.purchases.add({id:crypto.randomUUID(),invoiceNo:inv,supplierId:purchaseForm.supplierId||"supplier-default",ingredientId:ing.id,quantity:qty,unit:ing.unit,totalCost:cost,unitCost:cost/qty||0,createdAt:now});
+    await db.stockMovements.add({id:crypto.randomUUID(),ingredientId:ing.id,type:"IN",quantity:qty,reason:"Pembelian "+inv,createdAt:now});
+;
     await refresh();setPurchaseForm({ingredientId:"",supplierId:"",quantity:"",totalCost:""});setNotice("Pembelian dicatat.");
   }
   async function adjustStock(){
     const ing=ingredients.find(i=>i.id===stockForm.ingredientId);const q=Number(stockForm.quantity)||0;if(!ing||q<0||!stockForm.reason)return;
     const delta=stockForm.type==="IN"?q:stockForm.type==="OUT"?-q:q-ing.stock;const next=Math.max(0,ing.stock+delta);const now=new Date().toISOString();
-    await db.transaction("rw",db.ingredients,db.stockMovements,async()=>{
-      await db.ingredients.update(ing.id,{stock:next,updatedAt:now});
-      await db.stockMovements.add({id:crypto.randomUUID(),ingredientId:ing.id,type:stockForm.type,quantity:Math.abs(delta),reason:stockForm.reason,createdAt:now});
-    });
+    await db.ingredients.update(ing.id,{stock:next,updatedAt:now});
+    await db.stockMovements.add({id:crypto.randomUUID(),ingredientId:ing.id,type:stockForm.type,quantity:Math.abs(delta),reason:stockForm.reason,createdAt:now});
+;
     await refresh();setStockForm({ingredientId:"",type:"IN",quantity:"",reason:""});setNotice("Stok disesuaikan.");
   }
   async function saveExpense(){
