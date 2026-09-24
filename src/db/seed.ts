@@ -23,5 +23,5 @@ export async function seedDatabase() {
 }
 
 export async function loadActiveProducts() {
-  return db.products.where("active").equals(1).toArray();
+  return db.products.toCollection().filter((product) => product.active).toArray();
 }
