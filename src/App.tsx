@@ -112,27 +112,39 @@ export default function App(){
       "Macaroni Cheese Chicken Crispy",
       "Macaroni Cheese Bolognese",
       "Macaroni Cheese Bolognese Chicken Crispy",
-    ];
-    const sizeOrder={S:0,M:1,L:2};
-    const familyOf=(name:string)=>{
-      const clean=name.replace(/\\s+[SML]$/,"").trim();
-      return clean;
+    ] as const;
+    const familyRank:Record<string,number>={
+      "Macaroni Cheese":0,
+      "Macaroni Cheese Chicken Crispy":1,
+      "Macaroni Cheese Bolognese":2,
+      "Macaroni Cheese Bolognese Chicken Crispy":3
     };
+    const sizeRank:Record<string,number>={S:0,M:1,L:2};
+
+    const baseFamily=(product:ProductRecord)=>{
+      const name=(product.name||"").trim();
+      const size=product.size;
+      if(size && name.endsWith(" "+size)) return name.slice(0,-(size.length+1)).trim();
+      for(const family of familyOrder){
+        if(name===family || name.startsWith(family+" ")) return family;
+      }
+      return name;
+    };
+
     return products
       .filter(p=>
         (category==="Semua"||p.category===category) &&
         (p.name+" "+p.sku).toLowerCase().includes(query.toLowerCase())
       )
       .sort((a,b)=>{
-        const af=familyOf(a.name);
-        const bf=familyOf(b.name);
-        const ai=familyOrder.indexOf(af);
-        const bi=familyOrder.indexOf(bf);
-        const familyCompare=(ai===-1?999:ai)-(bi===-1?999:bi);
+        const af=baseFamily(a);
+        const bf=baseFamily(b);
+        const familyCompare=(familyRank[af]??99)-(familyRank[bf]??99);
         if(familyCompare!==0) return familyCompare;
-        const as=(a.size ? sizeOrder[a.size] : 99);
-        const bs=(b.size ? sizeOrder[b.size] : 99);
-        if(as!==bs) return as-bs;
+
+        const sizeCompare=(a.size?sizeRank[a.size]:99)-(b.size?sizeRank[b.size]:99);
+        if(sizeCompare!==0) return sizeCompare;
+
         return a.name.localeCompare(b.name,"id");
       });
   },[products,category,query]);
