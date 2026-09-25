@@ -62,6 +62,6 @@ export function promoRuleLabel(promo: PromoRecord) {
     ? (Number(promo.value) || 0) + "%"
     : "Rp " + Math.round(Number(promo.value) || 0).toLocaleString("id-ID");
   const min = Number(promo.minSubtotal) > 0 ? " · min " + Math.round(promo.minSubtotal).toLocaleString("id-ID") : "";
-  const cap = Number(promo.maxDiscount) > 0 ? " · maks " + Math.round(promo.maxDiscount).toLocaleString("id-ID") : "";
+  const cap = Number(promo.maxDiscount) > 0 ? " · maks " + Math.round(Number(promo.maxDiscount)||0).toLocaleString("id-ID") : "";
   return value + min + cap;
 }
