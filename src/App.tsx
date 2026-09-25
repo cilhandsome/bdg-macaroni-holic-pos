@@ -547,6 +547,41 @@ export default function App(){
 ;
     await refresh();setStockForm({ingredientId:"",type:"IN",quantity:"",reason:""});setNotice("Stok disesuaikan.");
   }
+  function resetPromoForm(){
+    setPromoForm({id:"",code:"",name:"",type:"PERCENT",value:"10",minSubtotal:"0",maxDiscount:"",startDate:today(),endDate:today(),productId:"",maxUses:"",active:true});
+  }
+  function editPromo(promo:PromoRecord){
+    setPromoForm({id:promo.id,code:promo.code,name:promo.name,type:promo.type,value:String(promo.value),minSubtotal:String(promo.minSubtotal||0),maxDiscount:promo.maxDiscount?String(promo.maxDiscount):"",startDate:promo.startDate,endDate:promo.endDate,productId:promo.productIds?.[0]||"",maxUses:promo.maxUses?String(promo.maxUses):"",active:promo.active});
+    setView("promos");
+  }
+  async function savePromo(){
+    if(!context)return;
+    const code=promoForm.code.trim().toUpperCase().replace(/\s+/g,"-");
+    const name=promoForm.name.trim();
+    const value=Math.max(0,Number(promoForm.value)||0);
+    const minSubtotal=Math.max(0,Number(promoForm.minSubtotal)||0);
+    const maxDiscount=Math.max(0,Number(promoForm.maxDiscount)||0);
+    const maxUses=Math.max(0,Number(promoForm.maxUses)||0);
+    if(!code||!name){setError("Kode dan nama promo wajib diisi.");return;}
+    if(value<=0){setError("Nilai promo harus lebih dari 0.");return;}
+    if(promoForm.startDate>promoForm.endDate){setError("Tanggal mulai tidak boleh melewati tanggal berakhir.");return;}
+    if(promoForm.type==="PERCENT"&&value>100){setError("Diskon persen maksimal 100%.");return;}
+    if(promos.some(p=>p.code===code&&p.id!==promoForm.id)){setError("Kode promo sudah digunakan.");return;}
+    const now=new Date().toISOString();
+    const record:PromoRecord={id:promoForm.id||crypto.randomUUID(),code,name,type:promoForm.type,value,minSubtotal,maxDiscount:maxDiscount||undefined,startDate:promoForm.startDate,endDate:promoForm.endDate,productIds:promoForm.productId?[promoForm.productId]:[],outletIds:[],maxUses:maxUses||undefined,usedCount:promoForm.id?(promos.find(p=>p.id===promoForm.id)?.usedCount||0):0,active:promoForm.active,updatedAt:now};
+    await db.promos.put(record);
+    await db.auditLogs.add({id:crypto.randomUUID(),userId:context.user.id,action:"UPSERT",entity:"PROMO",entityId:record.id,detail:JSON.stringify(record),createdAt:now});
+    await refresh();resetPromoForm();setNotice("Promo "+record.code+" tersimpan.");
+  }
+  async function togglePromo(promo:PromoRecord){
+    if(!context)return;
+    const updated={...promo,active:!promo.active,updatedAt:new Date().toISOString()};
+    await db.promos.put(updated);
+    await db.auditLogs.add({id:crypto.randomUUID(),userId:context.user.id,action:"UPSERT",entity:"PROMO",entityId:updated.id,detail:JSON.stringify(updated),createdAt:updated.updatedAt});
+    if(selectedPromoId===promo.id&&!updated.active)setSelectedPromoId("");
+    await refresh();setNotice(updated.active?"Promo diaktifkan.":"Promo dinonaktifkan.");
+  }
+
   async function saveExpense(){
     if(!context||!expenseForm.description)return;const amount=Number(expenseForm.amount)||0;if(amount<=0)return;
     await db.expenses.add({id:crypto.randomUUID(),outletId:context.outlet.id,userId:context.user.id,category:expenseForm.category,description:expenseForm.description,amount,paymentMethod:expenseForm.paymentMethod,createdAt:new Date().toISOString()});
