@@ -626,7 +626,132 @@ function Ingredients({
 }
 function Recipes({products,ingredients,recipes,form,setForm,cost,onAdd,onRemove}:{products:ProductRecord[];ingredients:IngredientRecord[];recipes:RecipeRecord[];form:any;setForm:(v:any)=>void;cost:(id:string)=>number;onAdd:()=>void;onRemove:(r:string,i:string)=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Resep / BOM"><label className="field">Produk<select value={form.productId} onChange={e=>setForm({...form,productId:e.target.value})}><option value="">Pilih</option>{products.filter(p=>!p.trackStock).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><label className="field">Bahan<select value={form.ingredientId} onChange={e=>setForm({...form,ingredientId:e.target.value})}><option value="">Pilih</option>{ingredients.map(i=><option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}</select></label><Field label="Qty" type="number" value={form.qty} onChange={v=>setForm({...form,qty:v})}/><button className="primary-button" onClick={onAdd}>Tambah Komponen</button></Panel><Panel title="HPP & Margin">{products.filter(p=>!p.trackStock).map(p=><div className="recipe-card" key={p.id}><div className="recipe-head"><strong>{p.name}</strong><strong>HPP {rupiah(cost(p.id))}</strong></div>{recipes.filter(r=>r.productId===p.id).flatMap(r=>r.items.map(line=><div className="recipe-line" key={line.ingredientId}><span>{ingredients.find(i=>i.id===line.ingredientId)?.name}</span><span>{line.quantity} {line.unit}{line.estimated ? " · estimasi S" : ""}</span><button className="link-danger" onClick={()=>{const r=recipes.find(x=>x.productId===p.id);if(r)onRemove(r.id,line.ingredientId)}}>hapus</button></div>))}<div className="recipe-margin">Jual {rupiah(p.price)} · Margin {p.price?(((p.price-cost(p.id))/p.price)*100).toFixed(1):"0"}%</div></div>)}</Panel></div></section>}
 function Purchases({ingredients,suppliers,purchases,form,setForm,onSave}:{ingredients:IngredientRecord[];suppliers:SupplierRecord[];purchases:PurchaseRecord[];form:any;setForm:(v:any)=>void;onSave:()=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Penerimaan Barang"><label className="field">Supplier<select value={form.supplierId} onChange={e=>setForm({...form,supplierId:e.target.value})}><option value="">Pilih</option>{suppliers.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label><label className="field">Bahan<select value={form.ingredientId} onChange={e=>setForm({...form,ingredientId:e.target.value})}><option value="">Pilih</option>{ingredients.map(i=><option key={i.id} value={i.id}>{i.name}</option>)}</select></label><Field label="Qty" type="number" value={form.quantity} onChange={v=>setForm({...form,quantity:v})}/><Field label="Total biaya" type="number" value={form.totalCost} onChange={v=>setForm({...form,totalCost:v})}/><button className="primary-button" onClick={onSave}>Simpan Pembelian</button></Panel><Panel title="Riwayat Pembelian"><div className="simple-table">{purchases.map(p=><div className="table-row" key={p.id}><div><strong>{p.invoiceNo}</strong><small>{dateLabel(p.createdAt)}</small></div><strong>{rupiah(p.totalCost)}</strong></div>)}</div></Panel></div></section>}
-function Stock({ingredients,movements,form,setForm,onSave}:{ingredients:IngredientRecord[];movements:StockMovementRecord[];form:any;setForm:(v:any)=>void;onSave:()=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Penyesuaian Stok"><label className="field">Bahan<select value={form.ingredientId} onChange={e=>setForm({...form,ingredientId:e.target.value})}><option value="">Pilih</option>{ingredients.map(i=><option key={i.id} value={i.id}>{i.name}</option>)}</select></label><label className="field">Jenis<select value={form.type} onChange={e=>setForm({...form,type:e.target.value})}><option value="IN">Masuk</option><option value="OUT">Keluar</option><option value="ADJUSTMENT">Set Fisik</option></select></label><Field label={form.type==="ADJUSTMENT"?"Stok fisik":"Qty"} type="number" value={form.quantity} onChange={v=>setForm({...form,quantity:v})}/><Field label="Alasan" value={form.reason} onChange={v=>setForm({...form,reason:v})}/><button className="primary-button" onClick={onSave}>Simpan</button></Panel><Panel title="Kartu Stok Terbaru"><div className="simple-table">{movements.slice(0,30).map(m=><div className="table-row" key={m.id}><div><strong>{ingredients.find(i=>i.id===m.ingredientId)?.name}</strong><small>{m.type} · {m.reason}</small></div><strong>{m.quantity}</strong></div>)}</div></Panel></div></section>}
+function Stock({
+  ingredients,movements,form,setForm,onSave
+}:{
+  ingredients:IngredientRecord[];
+  movements:StockMovementRecord[];
+  form:any;
+  setForm:(v:any)=>void;
+  onSave:()=>void;
+}){
+  const selected = ingredients.find(i=>i.id===form.ingredientId);
+  const unitLabel = selected?.unit || "unit";
+
+  const selectIngredient = (id:string) => {
+    const item = ingredients.find(i=>i.id===id);
+    setForm({
+      ...form,
+      ingredientId:id,
+      quantity:form.type==="ADJUSTMENT" && item ? String(item.stock) : "",
+      reason:form.type==="ADJUSTMENT" && item ? "Koreksi stok fisik" : form.reason
+    });
+  };
+
+  const changeType = (type:"IN"|"OUT"|"ADJUSTMENT") => {
+    setForm({
+      ...form,
+      type,
+      quantity:type==="ADJUSTMENT" && selected ? String(selected.stock) : "",
+      reason:type==="ADJUSTMENT" && selected ? "Koreksi stok fisik" : ""
+    });
+  };
+
+  const editCurrentStock = (ingredient:IngredientRecord) => {
+    setForm({
+      ingredientId:ingredient.id,
+      type:"ADJUSTMENT",
+      quantity:String(ingredient.stock),
+      reason:"Koreksi stok fisik"
+    });
+  };
+
+  return <section className="page-section">
+    <div className="content-grid">
+      <Panel title="Penyesuaian Stok">
+        <label className="field">
+          Bahan
+          <select value={form.ingredientId} onChange={e=>selectIngredient(e.target.value)}>
+            <option value="">Pilih bahan</option>
+            {ingredients.map(i=><option key={i.id} value={i.id}>{i.name}</option>)}
+          </select>
+        </label>
+
+        {selected && <div className="stock-current-box">
+          <div><span>Stok saat ini</span><strong>{selected.stock} {selected.unit}</strong></div>
+          <small>{selected.packageSize ? "Kemasan: "+selected.packageSize : "Satuan stok: "+selected.unit}</small>
+        </div>}
+
+        <label className="field">
+          Jenis
+          <select value={form.type} onChange={e=>changeType(e.target.value as "IN"|"OUT"|"ADJUSTMENT")}>
+            <option value="IN">Stok Masuk</option>
+            <option value="OUT">Stok Keluar</option>
+            <option value="ADJUSTMENT">Koreksi / Edit Stok Fisik</option>
+          </select>
+        </label>
+
+        <div className="quantity-field">
+          <label className="field">
+            {form.type==="ADJUSTMENT" ? "Stok fisik" : form.type==="IN" ? "Jumlah masuk" : "Jumlah keluar"}
+            <div className="quantity-input-wrap">
+              <input
+                type="number"
+                min="0"
+                step={selected?.unit==="pcs" ? "1" : "0.01"}
+                value={form.quantity}
+                onChange={e=>setForm({...form,quantity:e.target.value})}
+                placeholder="0"
+              />
+              <span>{unitLabel}</span>
+            </div>
+          </label>
+        </div>
+
+        <Field label="Alasan" value={form.reason} onChange={v=>setForm({...form,reason:v})}/>
+
+        {selected && <div className="stock-result-preview">
+          {form.type==="ADJUSTMENT"
+            ? <>Stok baru: <strong>{Number(form.quantity)||0} {selected.unit}</strong></>
+            : <>Stok setelah transaksi: <strong>{Math.max(0, selected.stock + (form.type==="IN" ? (Number(form.quantity)||0) : -(Number(form.quantity)||0)))} {selected.unit}</strong></>
+          }
+        </div>}
+
+        <button className="primary-button" onClick={onSave} disabled={!selected || !(Number(form.quantity)>=0) || !form.reason}>
+          Simpan Perubahan Stok
+        </button>
+      </Panel>
+
+      <Panel title="Kartu Stok Terbaru">
+        <div className="simple-table">
+          {ingredients.map(i=>
+            <div className="stock-row" key={i.id}>
+              <div className="stock-row-main">
+                <div>
+                  <strong>{i.name}</strong>
+                  <small>Stok: {i.stock} {i.unit}{i.packageSize ? " · "+i.packageSize : ""}</small>
+                </div>
+                <strong className={i.stock<=i.minStock ? "danger-text" : ""}>{i.stock} {i.unit}</strong>
+              </div>
+              <button className="edit-row-button" type="button" onClick={()=>editCurrentStock(i)}>Edit</button>
+            </div>
+          )}
+
+          <div className="panel-subtitle">Aktivitas stok terbaru</div>
+          {movements.slice(0,15).map(m=>
+            <div className="table-row" key={m.id}>
+              <div>
+                <strong>{ingredients.find(i=>i.id===m.ingredientId)?.name || "Bahan"}</strong>
+                <small>{m.type} · {m.reason}</small>
+              </div>
+              <strong>{m.quantity} {ingredients.find(i=>i.id===m.ingredientId)?.unit || ""}</strong>
+            </div>
+          )}
+        </div>
+      </Panel>
+    </div>
+  </section>;
+}
 function Expenses({expenses,form,setForm,onSave}:{expenses:ExpenseRecord[];form:any;setForm:(v:any)=>void;onSave:()=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Catat Pengeluaran"><Field label="Kategori" value={form.category} onChange={v=>setForm({...form,category:v})}/><Field label="Deskripsi" value={form.description} onChange={v=>setForm({...form,description:v})}/><Field label="Nominal" type="number" value={form.amount} onChange={v=>setForm({...form,amount:v})}/><label className="field">Metode<select value={form.paymentMethod} onChange={e=>setForm({...form,paymentMethod:e.target.value})}><option>Cash</option><option>Transfer</option><option>Debit</option></select></label><button className="primary-button" onClick={onSave}>Simpan Pengeluaran</button></Panel><Panel title="Riwayat Pengeluaran"><div className="simple-table">{expenses.map(e=><div className="table-row" key={e.id}><div><strong>{e.description}</strong><small>{e.category} · {dateLabel(e.createdAt)}</small></div><strong>{rupiah(e.amount)}</strong></div>)}</div></Panel></div></section>}
 function Shift({active,shifts,opening,setOpening,closing,setClosing,onOpen,onClose}:{active:ShiftRecord|null;shifts:ShiftRecord[];opening:string;setOpening:(v:string)=>void;closing:string;setClosing:(v:string)=>void;onOpen:()=>void;onClose:()=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Shift Aktif">{active?<><div className="shift-current"><div><strong>OPEN</strong><small>{dateLabel(active.startedAt)}</small></div><strong>{rupiah(active.openingCash)}</strong></div><Field label="Kas fisik saat tutup" type="number" value={closing} onChange={setClosing}/><button className="primary-button" onClick={onClose}>Tutup Shift</button></>:<><Field label="Modal awal" type="number" value={opening} onChange={setOpening}/><button className="primary-button" onClick={onOpen}>Buka Shift</button></>}</Panel><Panel title="Riwayat Shift"><div className="simple-table">{shifts.map(s=><div className="table-row" key={s.id}><div><strong>{s.status}</strong><small>{dateLabel(s.startedAt)}</small></div><div><strong>{rupiah(s.openingCash)}</strong><small>{s.variance==null?"—":"Selisih "+rupiah(s.variance)}</small></div></div>)}</div></Panel></div></section>}
 function Reports({sales,expenses,products}:{sales:SaleRecord[];expenses:ExpenseRecord[];products:ProductRecord[]}){
