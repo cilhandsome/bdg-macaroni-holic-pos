@@ -7,6 +7,7 @@ export type ProductRecord = {
 };
 export type IngredientRecord = {
   id: string; sku: string; name: string; category: string; unit: string; packageSize?: string;
+  purchasePrice?: number; yieldMultiplier?: number;
   stock: number; minStock: number; costPerUnit: number; includeInHpp?: boolean;
   priceMode?: "RO" | "MARKET" | "MANUAL"; updatedAt: string;
 };
