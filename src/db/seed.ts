@@ -202,8 +202,7 @@ export async function seedDatabase(){
     await db.recipes.where("productId").equals(id).delete();
     await db.products.delete(id);
   }
-  if (await db.products.where("category").equals("Macaroni").count() < products.length) {
-    const catalogMigrationKey = "catalogMigrationV6";
+  const catalogMigrationKey = "catalogMigrationV6";
   const catalogMigrationDone = (await db.settings.get(catalogMigrationKey))?.value === "done";
 
   if (!catalogMigrationDone) {
@@ -268,12 +267,12 @@ export async function seedDatabase(){
     if(Object.keys(patch).length) await db.sales.update(sale.id,patch);
   }
 
-  const defaults=[["companyName","Macaroni Holic"],["currentOutletId",outlet.id],["currentUserId","user-admin"]];
+  const defaults=[["companyName","Macaroni Holic"],["currentOutletId",outlet.id]];
   for(const [key,value] of defaults){ if(!(await db.settings.get(key))) await db.settings.add({key,value}); }
 }
 export async function loadActiveProducts(){ return db.products.toCollection().filter((p)=>p.active).toArray(); }
 export async function getCurrentContext(){
   const outletId=(await db.settings.get("currentOutletId"))?.value ?? outlet.id;
   const userId=(await db.settings.get("currentUserId"))?.value ?? "user-admin";
-  return { outlet:(await db.outlets.get(outletId))??outlet, user:(await db.users.get(userId))??users[1] };
+  return { outlet:(await db.outlets.get(outletId))??outlet, user:(await db.users.get(userId))??users[2] };
 }
