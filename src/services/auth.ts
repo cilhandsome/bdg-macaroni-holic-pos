@@ -15,7 +15,7 @@ function hexToBytes(hex: string) {
 async function derive(password: string, salt: Uint8Array) {
   const keyMaterial = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
   const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt, iterations: ITERATIONS, hash: "SHA-256" },
+    { name: "PBKDF2", salt: new Uint8Array(salt).buffer as ArrayBuffer, iterations: ITERATIONS, hash: "SHA-256" },
     keyMaterial,
     256
   );
