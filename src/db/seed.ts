@@ -28,10 +28,10 @@ const ingredients: IngredientRecord[] = [
   { id:"ing-topping-crispy",sku:"ING-002",name:"Tepung Crispy Istimewa",category:"Pelapis",unit:"g",packageSize:"800 gr",purchasePrice:17000,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:17,includeInHpp:true,priceMode:"RO",updatedAt:now() },
   { id:"ing-sauce-bolognese",sku:"ING-003",name:"Saus Bolognese Special KKI",category:"Saus",unit:"g",packageSize:"500 gr",purchasePrice:25000,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:50,includeInHpp:true,priceMode:"RO",updatedAt:now() },
   { id:"ing-cheese",sku:"ING-004",name:"Bubuk Keju Super Khas KKI",category:"Saus",unit:"ml",packageSize:"200 gr",purchasePrice:28000,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:40,includeInHpp:true,priceMode:"RO",updatedAt:now() },
-  { id:"ing-chili",sku:"ING-005",name:"Saus Chili",category:"Saus",unit:"ml",packageSize:"1 kg",purchasePrice:35000,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:0,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
-  { id:"ing-mayo",sku:"ING-006",name:"Mayonaise",category:"Saus",unit:"ml",packageSize:"1 kg",purchasePrice:30000,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:0,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
+  { id:"ing-chili",sku:"ING-005",name:"Saus Chili",category:"Saus",unit:"ml",packageSize:"1 kg",purchasePrice:35000,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:27.63,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
+  { id:"ing-mayo",sku:"ING-006",name:"Mayonaise",category:"Saus",unit:"ml",packageSize:"1 kg",purchasePrice:30000,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:23.7,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
   { id:"ing-chicken-fillet",sku:"ING-007",name:"Ayam Fillet",category:"Protein",unit:"g",packageSize:"1 kg",purchasePrice:58000,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:58,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
-  { id:"ing-oil",sku:"ING-008",name:"Minyak Goreng",category:"Bahan utama",unit:"ml",packageSize:"1 L",purchasePrice:22600,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:22.6,includeInHpp:false,priceMode:"MARKET",updatedAt:now() },
+  { id:"ing-oil",sku:"ING-008",name:"Minyak Goreng",category:"Bahan utama",unit:"ml",packageSize:"1 L",purchasePrice:22600,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:22.6,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
   { id:"ing-parsley",sku:"ING-009",name:"Parsley",category:"Topping",unit:"g",packageSize:"",purchasePrice:180,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:180,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
   { id:"ing-packaging-s",sku:"ING-010-S",name:"Packaging S",category:"Packaging",unit:"pcs",packageSize:"1 pcs",purchasePrice:0,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:0,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
   { id:"ing-packaging-m",sku:"ING-010-M",name:"Packaging M",category:"Packaging",unit:"pcs",packageSize:"1 pcs",purchasePrice:1250,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:1250,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
@@ -189,7 +189,7 @@ export async function seedDatabase(){
   if(await db.ingredients.count()===0) await db.ingredients.bulkAdd(ingredients);
   if(await db.recipes.count()===0) await db.recipes.bulkAdd(recipes);
 
-  const demoIngredientIds = ["ing-macaroni","ing-cheese","ing-sauce","ing-milk","ing-beef","ing-chicken","ing-spicy","ing-cup","ing-spoon"];
+  const demoIngredientIds = ["ing-sauce","ing-milk","ing-beef","ing-chicken","ing-spicy","ing-cup","ing-spoon","ing-packaging","ing-bolognese-old"];
   const demoNames = new Set(["Macaroni","Keju","Saus","Susu","Beef","Chicken","Bumbu Pedas","Cup / Packaging","Sendok"]);
   for (const product of await db.products.toArray()) {
     if (["mac-cheese","mac-beef","spicy-mac","mac-chicken","fries","sausage","chicken-nugget","iced-tea","mineral","cola","extra-cheese","extra-beef"].includes(product.id)) {
@@ -218,7 +218,7 @@ export async function seedDatabase(){
     if (!existing) await db.ingredients.add(ingredient);
     else await db.ingredients.update(ingredient.id, {
       name: ingredient.name, sku: ingredient.sku, category: ingredient.category, unit: ingredient.unit,
-      packageSize: ingredient.packageSize, purchasePrice: ingredient.purchasePrice, yieldMultiplier: ingredient.yieldMultiplier, costPerUnit: ingredient.costPerUnit,
+      packageSize: ingredient.packageSize, purchasePrice: ingredient.purchasePrice, yieldMultiplier: ingredient.yieldMultiplier, costPerUnit: ingredient.costPerUnit, includeInHpp: ingredient.includeInHpp, priceMode: ingredient.priceMode,
       includeInHpp: ingredient.includeInHpp, priceMode: ingredient.priceMode, updatedAt: now()
     });
   }
