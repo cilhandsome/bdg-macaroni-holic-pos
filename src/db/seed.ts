@@ -7,7 +7,14 @@ const users: UserRecord[] = [
   { id:"user-supervisor", name:"Supervisor", username:"supervisor", role:"SUPERVISOR", outletId:outlet.id, active:true, updatedAt:now() },
   { id:"user-admin", name:"Admin Kasir", username:"admin", role:"CASHIER", outletId:outlet.id, active:true, updatedAt:now() }
 ];
-const suppliers: SupplierRecord[] = [{ id:"supplier-default", name:"Supplier Utama", phone:"", address:"", updatedAt:now() }];
+const suppliers: SupplierRecord[] = [
+  { id:"supplier-default", name:"Supplier Utama", phone:"", address:"", updatedAt:now() },
+  { id:"supplier-local", name:"Supplier Lokal", phone:"", address:"Bandung", updatedAt:now() },
+  { id:"supplier-market", name:"Pasar Tradisional", phone:"", address:"Pasar lokal / tradisional", updatedAt:now() },
+  { id:"supplier-minimarket", name:"Minimarket", phone:"", address:"Pembelian retail", updatedAt:now() },
+  { id:"supplier-grocery", name:"Toko Bahan Baku", phone:"", address:"Toko bahan baku lokal", updatedAt:now() },
+  { id:"supplier-online", name:"Marketplace / Online", phone:"", address:"Pembelian online", updatedAt:now() }
+];
 const products: ProductRecord[] = [
   { id:"mc-cheese-s",sku:"MH-MC-001-S",name:"Macaroni Cheese S",category:"Macaroni",price:5000,stock:0,productCost:0,emoji:"🧀",active:true,trackStock:false,size:"S",updatedAt:now() },
   { id:"mc-cheese-m",sku:"MH-MC-001-M",name:"Macaroni Cheese M",category:"Macaroni",price:10000,stock:0,productCost:0,emoji:"🧀",active:true,trackStock:false,size:"M",updatedAt:now() },
@@ -193,6 +200,14 @@ export async function seedDatabase(){
     await db.settings.put({key:"authMigrationV1",value:"done"});
   }
   if(await db.suppliers.count()===0) await db.suppliers.bulkAdd(suppliers);
+  const supplierMigrationKey = "supplierOptionsV1";
+  if ((await db.settings.get(supplierMigrationKey))?.value !== "done") {
+    for (const supplier of suppliers) {
+      const existing = await db.suppliers.get(supplier.id);
+      if (!existing) await db.suppliers.add(supplier);
+    }
+    await db.settings.put({key:supplierMigrationKey,value:"done"});
+  }
   if(await db.products.count()===0) await db.products.bulkAdd(products);
   const temporaryDemoIds = [
     "mac-cheese","mac-beef","spicy-mac","mac-chicken",
