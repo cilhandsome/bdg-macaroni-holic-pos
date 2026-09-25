@@ -1,7 +1,7 @@
 import { db, type IngredientRecord, type ProductRecord, type RecipeRecord, type SaleRecord, type SupplierRecord, type PurchaseRecord, type StockMovementRecord, type ShiftRecord, type ExpenseRecord, type OutletRecord, type UserRecord, type AuditLogRecord } from "../db/db";
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 
 export function cloudSyncConfigured(){ return Boolean(url && key); }
 
