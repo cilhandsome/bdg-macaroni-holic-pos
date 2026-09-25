@@ -203,49 +203,51 @@ export async function seedDatabase(){
     await db.products.delete(id);
   }
   if (await db.products.where("category").equals("Macaroni").count() < products.length) {
+    const catalogMigrationKey = "catalogMigrationV6";
+  const catalogMigrationDone = (await db.settings.get(catalogMigrationKey))?.value === "done";
+
+  if (!catalogMigrationDone) {
     for (const product of products) {
-      if (!(await db.products.get(product.id))) await db.products.add(product);
+      const existing = await db.products.get(product.id);
+      if (!existing) {
+        await db.products.add(product);
+      } else {
+        await db.products.update(product.id, {
+          name: product.name,
+          sku: product.sku,
+          category: product.category,
+          price: product.price,
+          productCost: product.productCost ?? 0,
+          size: product.size,
+          active: true,
+          updatedAt: now()
+        });
+      }
     }
-  }
-  if(await db.ingredients.count()===0) await db.ingredients.bulkAdd(ingredients);
-  if(await db.recipes.count()===0) await db.recipes.bulkAdd(recipes);
 
-  const demoIngredientIds = ["ing-sauce","ing-milk","ing-beef","ing-chicken","ing-spicy","ing-cup","ing-spoon","ing-packaging","ing-bolognese-old"];
-  const demoNames = new Set(["Macaroni","Keju","Saus","Susu","Beef","Chicken","Bumbu Pedas","Cup / Packaging","Sendok"]);
-  for (const product of await db.products.toArray()) {
-    if (["mac-cheese","mac-beef","spicy-mac","mac-chicken","fries","sausage","chicken-nugget","iced-tea","mineral","cola","extra-cheese","extra-beef"].includes(product.id)) {
-      await db.products.delete(product.id);
-    }
-  }
-  for (const id of demoIngredientIds) {
-    const item = await db.ingredients.get(id);
-    if (item && demoNames.has(item.name) && item.costPerUnit === 0) await db.ingredients.delete(id);
-  }
-
-  for (const product of products) {
-    const existing = await db.products.get(product.id);
-    if (!existing) {
-      await db.products.add(product);
-    } else {
-      await db.products.update(product.id, {
-        name: product.name, sku: product.sku, category: product.category, price: product.price,
-        size: product.size, active: true, trackStock: false, updatedAt: now()
+    for (const ingredient of ingredients) {
+      const existing = await db.ingredients.get(ingredient.id);
+      if (!existing) await db.ingredients.add(ingredient);
+      else await db.ingredients.update(ingredient.id, {
+        name: ingredient.name,
+        sku: ingredient.sku,
+        category: ingredient.category,
+        unit: ingredient.unit,
+        packageSize: ingredient.packageSize,
+        purchasePrice: ingredient.purchasePrice,
+        yieldMultiplier: ingredient.yieldMultiplier,
+        costPerUnit: ingredient.costPerUnit,
+        includeInHpp: ingredient.includeInHpp,
+        priceMode: ingredient.priceMode,
+        updatedAt: now()
       });
     }
-  }
 
-  for (const ingredient of ingredients) {
-    const existing = await db.ingredients.get(ingredient.id);
-    if (!existing) await db.ingredients.add(ingredient);
-    else await db.ingredients.update(ingredient.id, {
-      name: ingredient.name, sku: ingredient.sku, category: ingredient.category, unit: ingredient.unit,
-      packageSize: ingredient.packageSize, purchasePrice: ingredient.purchasePrice, yieldMultiplier: ingredient.yieldMultiplier, costPerUnit: ingredient.costPerUnit, includeInHpp: ingredient.includeInHpp, priceMode: ingredient.priceMode,
-      includeInHpp: ingredient.includeInHpp, priceMode: ingredient.priceMode, updatedAt: now()
-    });
-  }
+    for (const recipe of recipes) {
+      await db.recipes.put(recipe);
+    }
 
-  for (const recipe of recipes) {
-    await db.recipes.put(recipe);
+    await db.settings.put({key:catalogMigrationKey,value:"done"});
   }
 
   const currentProducts=await db.products.toArray();
