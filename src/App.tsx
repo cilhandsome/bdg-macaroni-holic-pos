@@ -161,6 +161,51 @@ export default function App(){
   const cartSubtotal=cart.reduce((n,x)=>n+(Number(x.price)||0)*(Number(x.qty)||0),0);
   const total=cartSubtotal; const received=Number(cashReceived)||0; const change=Math.max(received-total,0);
 
+  async function calculateSaleHpp(sale: SaleRecord){
+    let cogs = 0;
+    const updatedItems = Array.isArray(sale.items) ? sale.items.map(item => ({...item})) : [];
+    for (const item of updatedItems) {
+      const recipe = await db.recipes.where("productId").equals(item.productId).first();
+      let itemCost = 0;
+      if (recipe) {
+        for (const line of recipe.items) {
+          const ingredient = await db.ingredients.get(line.ingredientId);
+          if (ingredient?.includeInHpp === false) continue;
+          itemCost += (Number(ingredient?.costPerUnit) || 0) * (Number(line.quantity) || 0);
+        }
+      }
+      item.cost = itemCost;
+      cogs += itemCost * (Number(item.qty) || 0);
+    }
+    return { cogs, items: updatedItems };
+  }
+
+  async function recalculateReportHpp(from: string, to: string){
+    const targets = sales.filter(s => {
+      const d = s.createdAt.slice(0,10);
+      return d >= from && d <= to;
+    });
+    if (!targets.length) {
+      setNotice("Tidak ada transaksi pada periode yang dipilih.");
+      return;
+    }
+    const confirmed = window.confirm(
+      "Hitung ulang HPP transaksi pada periode ini menggunakan resep dan harga bahan baku saat ini? Ini cocok untuk pengujian data lama."
+    );
+    if (!confirmed) return;
+
+    try {
+      for (const sale of targets) {
+        const result = await calculateSaleHpp(sale);
+        await db.sales.update(sale.id, { costOfGoods: result.cogs, items: result.items });
+      }
+      await refresh();
+      setNotice(targets.length + " transaksi berhasil dihitung ulang menggunakan HPP saat ini.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal menghitung ulang HPP.");
+    }
+  }
+
   async function checkout(){
     if(!context||!cart.length)return;
     if(paymentMethod==="Cash"&&received<total){setError("Nominal pembayaran belum mencukupi.");return;}
@@ -408,7 +453,7 @@ export default function App(){
       {view==="stock"&&<Stock ingredients={ingredients} movements={stockMoves} form={stockForm} setForm={setStockForm} onSave={()=>void adjustStock()}/>}
       {view==="expenses"&&<Expenses expenses={expenses} form={expenseForm} setForm={setExpenseForm} onSave={()=>void saveExpense()}/>}
       {view==="shift"&&<Shift active={activeShift} shifts={shifts} opening={openingCash} setOpening={setOpeningCash} closing={closingCash} setClosing={setClosingCash} onOpen={()=>void openShift()} onClose={()=>void closeShift()}/>}
-      {view==="reports"&&<Reports sales={sales} expenses={expenses} products={products}/>}
+      {view==="reports"&&<Reports sales={sales} expenses={expenses} products={products} onRecalculateHpp={recalculateReportHpp}/>} 
       {view==="outlets"&&<AdminList title="Outlet" items={outlets.map(o=>({id:o.id,title:o.name,meta:o.code+" · "+o.address}))} selected={selectedId} setSelected={setSelectedId} onEdit={()=>void editOutlet()}/>}
       {view==="users"&&<Users users={users} selected={selectedId} setSelected={setSelectedId} onEdit={()=>void editUser()} onActivate={(u)=>void activateUser(u)}/>}
       {view==="settings"&&<Settings onBackup={()=>void backup()} onRestore={(f)=>void restore(f)} onSync={()=>void doSync()}/>}
@@ -756,7 +801,7 @@ function Stock({
 }
 function Expenses({expenses,form,setForm,onSave}:{expenses:ExpenseRecord[];form:any;setForm:(v:any)=>void;onSave:()=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Catat Pengeluaran"><Field label="Kategori" value={form.category} onChange={v=>setForm({...form,category:v})}/><Field label="Deskripsi" value={form.description} onChange={v=>setForm({...form,description:v})}/><Field label="Nominal" type="number" value={form.amount} onChange={v=>setForm({...form,amount:v})}/><label className="field">Metode<select value={form.paymentMethod} onChange={e=>setForm({...form,paymentMethod:e.target.value})}><option>Cash</option><option>Transfer</option><option>Debit</option></select></label><button className="primary-button" onClick={onSave}>Simpan Pengeluaran</button></Panel><Panel title="Riwayat Pengeluaran"><div className="simple-table">{expenses.map(e=><div className="table-row" key={e.id}><div><strong>{e.description}</strong><small>{e.category} · {dateLabel(e.createdAt)}</small></div><strong>{rupiah(e.amount)}</strong></div>)}</div></Panel></div></section>}
 function Shift({active,shifts,opening,setOpening,closing,setClosing,onOpen,onClose}:{active:ShiftRecord|null;shifts:ShiftRecord[];opening:string;setOpening:(v:string)=>void;closing:string;setClosing:(v:string)=>void;onOpen:()=>void;onClose:()=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Shift Aktif">{active?<><div className="shift-current"><div><strong>OPEN</strong><small>{dateLabel(active.startedAt)}</small></div><strong>{rupiah(active.openingCash)}</strong></div><Field label="Kas fisik saat tutup" type="number" value={closing} onChange={setClosing}/><button className="primary-button" onClick={onClose}>Tutup Shift</button></>:<><Field label="Modal awal" type="number" value={opening} onChange={setOpening}/><button className="primary-button" onClick={onOpen}>Buka Shift</button></>}</Panel><Panel title="Riwayat Shift"><div className="simple-table">{shifts.map(s=><div className="table-row" key={s.id}><div><strong>{s.status}</strong><small>{dateLabel(s.startedAt)}</small></div><div><strong>{rupiah(s.openingCash)}</strong><small>{s.variance==null?"—":"Selisih "+rupiah(s.variance)}</small></div></div>)}</div></Panel></div></section>}
-function Reports({sales,expenses,products}:{sales:SaleRecord[];expenses:ExpenseRecord[];products:ProductRecord[]}){
+function Reports({sales,expenses,products,onRecalculateHpp}:{sales:SaleRecord[];expenses:ExpenseRecord[];products:ProductRecord[];onRecalculateHpp:(from:string,to:string)=>void}){
   const [from,setFrom]=useState(today());
   const [to,setTo]=useState(today());
 
@@ -832,6 +877,7 @@ function Reports({sales,expenses,products}:{sales:SaleRecord[];expenses:ExpenseR
         <label>Tanggal mulai<input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label>
         <label>Tanggal akhir<input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label>
         <button className="secondary-button" type="button" onClick={exportReport}>Export CSV</button>
+        <button className="secondary-button report-recalc-button" type="button" onClick={()=>void onRecalculateHpp(from,to)}>↻ Hitung Ulang HPP</button>
       </div>
     </div>
 
