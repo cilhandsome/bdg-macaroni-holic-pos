@@ -1,8 +1,10 @@
 import { db, type IngredientRecord, type ProductRecord, type RecipeRecord, type OutletRecord, type UserRecord, type SupplierRecord } from "./db";
+import { hashPassword } from "../services/auth";
 const now = () => new Date().toISOString();
 const outlet: OutletRecord = { id:"outlet-bdg-01", code:"BDG01", name:"Macaroni Holic Bandung 01", address:"Bandung, Jawa Barat", phone:"", active:true, updatedAt:now() };
 const users: UserRecord[] = [
   { id:"user-owner", name:"Owner", username:"owner", role:"OWNER", outletId:outlet.id, active:true, updatedAt:now() },
+  { id:"user-supervisor", name:"Supervisor", username:"supervisor", role:"SUPERVISOR", outletId:outlet.id, active:true, updatedAt:now() },
   { id:"user-admin", name:"Admin Kasir", username:"admin", role:"CASHIER", outletId:outlet.id, active:true, updatedAt:now() }
 ];
 const suppliers: SupplierRecord[] = [{ id:"supplier-default", name:"Supplier Utama", phone:"", address:"", updatedAt:now() }];
@@ -171,6 +173,25 @@ const recipes: RecipeRecord[] = [
 export async function seedDatabase(){
   if(await db.outlets.count()===0) await db.outlets.add(outlet);
   if(await db.users.count()===0) await db.users.bulkAdd(users);
+  const defaultPasswords: Record<string,string> = {
+    "user-owner":"owner123",
+    "user-supervisor":"supervisor123",
+    "user-admin":"admin123"
+  };
+  for (const u of users) {
+    const existing = await db.users.get(u.id);
+    if (!existing) {
+      const credentials = await hashPassword(defaultPasswords[u.id] ?? "change-me");
+      await db.users.put({...u,passwordHash:credentials.hash,passwordSalt:credentials.salt});
+    } else if (!existing.passwordHash || !existing.passwordSalt) {
+      const credentials = await hashPassword(defaultPasswords[u.id] ?? "change-me");
+      await db.users.update(u.id,{passwordHash:credentials.hash,passwordSalt:credentials.salt,updatedAt:now()});
+    }
+  }
+  if (!(await db.settings.get("authMigrationV1"))) {
+    await db.settings.delete("currentUserId");
+    await db.settings.put({key:"authMigrationV1",value:"done"});
+  }
   if(await db.suppliers.count()===0) await db.suppliers.bulkAdd(suppliers);
   if(await db.products.count()===0) await db.products.bulkAdd(products);
   const temporaryDemoIds = [
