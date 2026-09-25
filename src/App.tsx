@@ -490,7 +490,7 @@ export default function App(){
   async function saveIngredient(){
     if(!ingredientForm.name)return;
     const record:IngredientRecord={id:ingredientForm.id||crypto.randomUUID(),sku:ingredientForm.sku||"ING-"+Date.now().toString().slice(-6),name:ingredientForm.name,category:ingredientForm.category,unit:ingredientForm.unit,stock:Number(ingredientForm.stock)||0,minStock:Number(ingredientForm.minStock)||0,costPerUnit:Number(ingredientForm.costPerUnit)||0,includeInHpp:ingredientForm.includeInHpp,priceMode:ingredientForm.priceMode,packageSize:ingredientForm.packageSize,purchasePrice:Number(ingredientForm.purchasePrice)||0,yieldMultiplier:Number(ingredientForm.yieldMultiplier)||1,updatedAt:new Date().toISOString()};
-    await db.ingredients.put(record);await refresh();setIngredientForm({id:"",sku:"",name:"",category:"Bahan utama",unit:"g",stock:"",minStock:"",costPerUnit:"",includeInHpp:true,priceMode:"RO",packageSize:""});setNotice("Bahan baku tersimpan.");
+    await db.ingredients.put(record);await refresh();setIngredientForm({id:"",sku:"",name:"",category:"Bahan utama",unit:"g",stock:"",minStock:"",costPerUnit:"",includeInHpp:true,priceMode:"RO",packageSize:"",purchasePrice:"",yieldMultiplier:"1"});setNotice("Bahan baku tersimpan.");
   }
   async function addRecipeItem(){
     if(!recipeForm.productId||!recipeForm.ingredientId||!recipeForm.qty)return;
