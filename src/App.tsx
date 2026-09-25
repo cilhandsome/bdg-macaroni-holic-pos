@@ -1,4 +1,4 @@
-import { Component, useEffect, useMemo, useState, type ErrorInfo, type ReactNode } from "react";
+import { Component, useEffect, useMemo, useState, type ErrorInfo, type FormEvent, type ReactNode } from "react";
 import {
   db,
   type ProductRecord, type IngredientRecord, type RecipeRecord, type SaleRecord,
@@ -26,7 +26,7 @@ function LoginScreen({onLogin}:{onLogin:(username:string,password:string)=>Promi
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
 
-  async function submit(e:React.FormEvent){
+  async function submit(e:FormEvent){
     e.preventDefault();
     if(!username||!password){setError("Username dan password wajib diisi.");return;}
     setBusy(true);setError("");
@@ -583,9 +583,14 @@ export default function App(){
 
   const visibleNav = nav.filter(([id]) => authUser ? roleViews[authUser.role].includes(id) : false);
 
+  useEffect(()=>{
+    if(authUser && !roleViews[authUser.role].includes(view)){
+      setView(authUser.role==="CASHIER"?"pos":"dashboard");
+    }
+  },[authUser,view]);
+
   if(loading)return <div className="loading-screen">Memuat Macaroni Holic POS…</div>;
   if(!authUser)return <LoginScreen onLogin={handleLogin}/>;
-  if(!roleViews[authUser.role].includes(view)) setView(authUser.role==="CASHIER"?"pos":"dashboard");
 
   return <div className="app-frame">
     <aside className="main-nav">
