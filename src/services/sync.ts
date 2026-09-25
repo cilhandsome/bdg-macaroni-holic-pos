@@ -121,7 +121,11 @@ async function writeRemoteToLocal(remote:CloudBundle){
     const promoRows = new Map<string, PromoRecord>();
     const salePromoRows = new Map<string, {saleId:string;promoId?:string;promoCode?:string;promoName?:string}>();
     for(const row of remote.audit_logs){
-      const promo=parsePromoAudit(row); if(promo) promoRows.set(promo.id,promo);
+      const promo=parsePromoAudit(row);
+      if(promo){
+        const current=promoRows.get(promo.id);
+        if(!current || (promo.updatedAt||"") >= (current.updatedAt||"")) promoRows.set(promo.id,promo);
+      }
       const salePromo=parseSalePromoAudit(row); if(salePromo) salePromoRows.set(salePromo.saleId,salePromo);
     }
     if(promoRows.size) await db.promos.bulkPut([...promoRows.values()]);
