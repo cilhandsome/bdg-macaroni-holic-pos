@@ -22,6 +22,24 @@ export type StockMovementRecord = {
   id: string; ingredientId: string; type: "IN" | "OUT" | "ADJUSTMENT"; quantity: number;
   reason: string; referenceId?: string; createdAt: string;
 };
+export type PromoType = "PERCENT" | "NOMINAL";
+export type PromoRecord = {
+  id: string;
+  code: string;
+  name: string;
+  type: PromoType;
+  value: number;
+  minSubtotal: number;
+  maxDiscount?: number;
+  startDate: string;
+  endDate: string;
+  productIds: string[];
+  outletIds: string[];
+  maxUses?: number;
+  usedCount: number;
+  active: boolean;
+  updatedAt: string;
+};
 export type SaleRecord = {
   id: string; invoiceNo: string; orderType: "Take Away" | "Dine In"; tableNumber: string;
   paymentMethod: string; subtotal: number; discount: number; total: number; cashReceived: number;
@@ -65,6 +83,7 @@ class MacaroniHolicDB extends Dexie {
   outlets!: Table<OutletRecord, string>;
   users!: Table<UserRecord, string>;
   auditLogs!: Table<AuditLogRecord, string>;
+  promos!: Table<PromoRecord, string>;
   syncQueue!: Table<SyncQueueRecord, string>;
   settings!: Table<SettingRecord, string>;
 
@@ -89,6 +108,23 @@ class MacaroniHolicDB extends Dexie {
       auditLogs: "id, userId, entity, createdAt",
       syncQueue: "id, tableName, recordId, createdAt, synced",
       settings: "key",
+    });
+    this.version(3).stores({
+      products: "id, sku, category, active, updatedAt",
+      ingredients: "id, sku, category, updatedAt",
+      recipes: "id, productId, updatedAt",
+      suppliers: "id, name, updatedAt",
+      purchases: "id, invoiceNo, supplierId, ingredientId, createdAt",
+      stockMovements: "id, ingredientId, type, createdAt",
+      sales: "id, invoiceNo, createdAt, outletId, userId, synced",
+      shifts: "id, outletId, userId, status, startedAt",
+      expenses: "id, outletId, userId, category, createdAt",
+      outlets: "id, code, active, updatedAt",
+      users: "id, username, role, outletId, active, updatedAt",
+      auditLogs: "id, userId, entity, createdAt",
+      syncQueue: "id, tableName, recordId, createdAt, synced",
+      settings: "key",
+      promos: "id, code, active, startDate, endDate, updatedAt"
     });
   }
 }
