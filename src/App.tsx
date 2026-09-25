@@ -51,6 +51,7 @@ class ErrorBoundary extends Component<{
 }
 
 const allCategories: Exclude<Category, "Semua">[] = ["Macaroni", "Snack", "Drink", "Topping"];
+const paymentMethods = ["Cash", "QRIS", "Debit", "Transfer", "Online"];
 const rupiah = (v: number) => new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(v);
 const today = () => new Date().toISOString().slice(0,10);
 const dateLabel = (v: string) => new Date(v).toLocaleString("id-ID");
@@ -287,9 +288,33 @@ export default function App(){
   }
 
   async function saveProduct(){
-    if(!productForm.name)return;
-    const record:ProductRecord={id:productForm.id||crypto.randomUUID(),sku:productForm.sku||"MH-"+Date.now().toString().slice(-6),name:productForm.size ? productForm.name + " " + productForm.size : productForm.name,category:productForm.category,price:Number(productForm.price)||0,stock:Number(productForm.stock)||0,emoji:"🍝",active:true,trackStock:productForm.trackStock,size:productForm.size || undefined,updatedAt:new Date().toISOString()};
-    await db.products.put(record);await refresh();setProductForm({id:"",sku:"",name:"",size:"",category:"Macaroni",price:"",stock:"",trackStock:false});setNotice("Produk tersimpan.");
+    if(!productForm.name.trim()){
+      setError("Nama menu wajib diisi.");
+      return;
+    }
+    const productId=productForm.id||crypto.randomUUID();
+    const now=new Date().toISOString();
+    const record:ProductRecord={
+      id:productId,
+      sku:productForm.sku||"MH-"+Date.now().toString().slice(-6),
+      name:productForm.size ? productForm.name.trim()+" "+productForm.size : productForm.name.trim(),
+      category:productForm.category,
+      price:Number(productForm.price)||0,
+      stock:productForm.trackStock ? Number(productForm.stock)||0 : 0,
+      emoji:productForm.category==="Drink" ? "🥤" : productForm.category==="Snack" ? "🍟" : productForm.category==="Topping" ? "🧀" : "🍝",
+      active:true,
+      trackStock:productForm.trackStock,
+      size:productForm.size || undefined,
+      updatedAt:now
+    };
+    await db.products.put(record);
+    await refresh();
+    if(productForm.trackStock){
+      setNotice("Menu tersimpan sebagai produk jadi. Stok dikelola di menu Stok.");
+    }else{
+      setNotice("Menu tersimpan. Langkah berikutnya: atur resep di Resep & HPP agar stok bahan dan HPP otomatis mengikuti penjualan.");
+    }
+    setProductForm({id:"",sku:"",name:"",size:"",category:"Macaroni",price:"",stock:"",trackStock:false});
   }
   function editIngredient(ingredient: IngredientRecord){
     setIngredientForm({
@@ -446,7 +471,7 @@ export default function App(){
       {view==="dashboard"&&<Dashboard sales={todaySales} revenue={todayRevenue} cogs={todayCogs} expense={todayExpense} lowStock={lowStock}/>}
       {view==="pos"&&<POS categories={availableCategories} category={category} setCategory={setCategory} products={filteredProducts} query={query} setQuery={setQuery} addCart={addCart} cart={cart} clearCart={()=>setCart([])} changeQty={changeQty} total={total} cartSubtotal={cartSubtotal} orderType={orderType} setOrderType={setOrderType} tableNumber={tableNumber} setTableNumber={setTableNumber} onPay={()=>setPaymentOpen(true)}/>}
       {view==="history"&&<History sales={sales} onOpen={setReceiptSale} onClear={()=>void clearTransactionHistory()}/>} 
-      {view==="products"&&<Products products={products} form={productForm} setForm={setProductForm} onSave={()=>void saveProduct()}/>}
+      {view==="products"&&<Products products={products} form={productForm} setForm={setProductForm} onSave={()=>void saveProduct()} onSetupRecipe={(productId)=>{setRecipeForm(x=>({...x,productId}));setView("recipes");setNotice("Produk dipilih. Silakan tambahkan komponen resep.");}}/>}
       {view==="ingredients"&&<Ingredients ingredients={ingredients} lowStock={lowStock} form={ingredientForm} setForm={setIngredientForm} onSave={()=>void saveIngredient()} onEdit={editIngredient} onReset={resetIngredientForm}/>} 
       {view==="recipes"&&<Recipes products={products} ingredients={ingredients} recipes={recipes} form={recipeForm} setForm={setRecipeForm} cost={recipeCost} onAdd={()=>void addRecipeItem()} onRemove={(r,i)=>void removeRecipeItem(r,i)}/>}
       {view==="purchases"&&<Purchases ingredients={ingredients} suppliers={suppliers} purchases={purchases} form={purchaseForm} setForm={setPurchaseForm} onSave={()=>void receivePurchase()}/>}
@@ -458,7 +483,7 @@ export default function App(){
       {view==="users"&&<Users users={users} selected={selectedId} setSelected={setSelectedId} onEdit={()=>void editUser()} onActivate={(u)=>void activateUser(u)}/>}
       {view==="settings"&&<Settings onBackup={()=>void backup()} onRestore={(f)=>void restore(f)} onSync={()=>void doSync()}/>}
 
-      {paymentOpen&&<Modal title="Pembayaran" onClose={()=>setPaymentOpen(false)}><div className="payment-total">{rupiah(total)}</div><div className="payment-methods">{["Cash","QRIS","Debit","Transfer"].map(m=><button key={m} className={paymentMethod===m?"method-button active":"method-button"} onClick={()=>setPaymentMethod(m)}>{m}</button>)}</div>{paymentMethod==="Cash"&&<label className="field">Uang diterima<input inputMode="numeric" value={cashReceived} onChange={e=>setCashReceived(e.target.value.replace(/\\D/g,""))}/><span>Kembalian: <strong>{rupiah(change)}</strong></span></label>}<button className="confirm-pay" disabled={paymentMethod==="Cash"&&received<total} onClick={()=>void checkout()}>Konfirmasi Pembayaran</button></Modal>}
+      {paymentOpen&&<Modal title="Pembayaran" onClose={()=>setPaymentOpen(false)}><div className="payment-total">{rupiah(total)}</div><div className="payment-methods">{paymentMethods.map(m=><button key={m} className={paymentMethod===m?"method-button active":"method-button"} onClick={()=>setPaymentMethod(m)}>{m}</button>)}</div>{paymentMethod==="Cash"&&<label className="field">Uang diterima<input inputMode="numeric" value={cashReceived} onChange={e=>setCashReceived(e.target.value.replace(/\\D/g,""))}/><span>Kembalian: <strong>{rupiah(change)}</strong></span></label>}<button className="confirm-pay" disabled={paymentMethod==="Cash"&&received<total} onClick={()=>void checkout()}>Konfirmasi Pembayaran</button></Modal>}
       {receiptSale&&<Receipt sale={receiptSale} onClose={()=>setReceiptSale(null)}/>}
     </main>
   </div>;
@@ -603,9 +628,76 @@ function History({sales,onOpen,onClear}:{sales:SaleRecord[];onOpen:(s:SaleRecord
     </Panel>
   </section>;
 }
-function Products({products,form,setForm,onSave}:{products:ProductRecord[];form:any;setForm:(v:any)=>void;onSave:()=>void}){
+function Products({
+  products,form,setForm,onSave,onSetupRecipe
+}:{
+  products:ProductRecord[];
+  form:any;
+  setForm:(v:any)=>void;
+  onSave:()=>void;
+  onSetupRecipe:(productId:string)=>void;
+}){
   const resetForm=()=>setForm({id:"",sku:"",name:"",size:"",category:"Macaroni",price:"",stock:"",trackStock:false});
-  return <section className="page-section"><div className="products-toolbar"><div><div className="page-kicker">Menu</div><h2>Master Menu</h2><p>Kelola menu yang tampil di kasir.</p></div><button className="primary-button toolbar-button" type="button" onClick={resetForm}>＋ Tambah Menu</button></div><div className="content-grid"><Panel title="Form Menu"><div className="form-grid"><Field label="SKU" value={form.sku} onChange={v=>setForm({...form,sku:v})}/><Field label="Nama menu" value={form.name} onChange={v=>setForm({...form,name:v})}/><label className="field">Ukuran<select value={form.size} onChange={e=>setForm({...form,size:e.target.value})}><option value="">Tanpa ukuran</option><option value="S">S</option><option value="M">M</option><option value="L">L</option></select></label><label className="field">Kategori<select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>{["Macaroni","Snack","Drink","Topping"].map(x=><option key={x}>{x}</option>)}</select></label><Field label="Harga jual" type="number" value={form.price} onChange={v=>setForm({...form,price:v})}/><Field label="Stok awal" type="number" value={form.stock} onChange={v=>setForm({...form,stock:v})}/><label className="checkbox"><input type="checkbox" checked={form.trackStock} onChange={e=>setForm({...form,trackStock:e.target.checked})}/> Track stok produk</label></div><button className="primary-button" onClick={onSave}>Simpan Produk</button></Panel><Panel title="Daftar Produk"><div className="simple-table">{products.map(p=><div className="table-row" key={p.id}><div><strong>{p.name}</strong><small>{p.sku} · {p.category}{p.size ? " · Ukuran " + p.size : ""}</small></div><div><strong>{p.price > 0 ? rupiah(p.price) : "Harga belum diatur"}</strong><small>{p.trackStock?"Stok "+p.stock:"Recipe stock"}</small></div></div>)}</div></Panel></div></section>}
+  const recipeReady=(productId:string)=>products.some(p=>p.id===productId) ? false : false;
+  return <section className="page-section">
+    <div className="products-toolbar">
+      <div><div className="page-kicker">Menu</div><h2>Master Menu</h2><p>Menu bisa ditambahkan dulu, kemudian resep/HPP diatur terpisah.</p></div>
+      <button className="primary-button toolbar-button" type="button" onClick={resetForm}>＋ Tambah Menu</button>
+    </div>
+    <div className="content-grid">
+      <Panel title={form.id ? "Edit Menu" : "Tambah Menu"}>
+        <div className="form-grid">
+          <Field label="SKU" value={form.sku} onChange={v=>setForm({...form,sku:v})}/>
+          <Field label="Nama menu" value={form.name} onChange={v=>setForm({...form,name:v})}/>
+          <label className="field">Ukuran
+            <select value={form.size} onChange={e=>setForm({...form,size:e.target.value})}>
+              <option value="">Tanpa ukuran</option><option value="S">S</option><option value="M">M</option><option value="L">L</option>
+            </select>
+          </label>
+          <label className="field">Kategori
+            <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>
+              {allCategories.map(x=><option key={x}>{x}</option>)}
+            </select>
+          </label>
+          <Field label="Harga jual" type="number" value={form.price} onChange={v=>setForm({...form,price:v})}/>
+          <label className="field">Model stok
+            <select value={form.trackStock ? "PRODUCT" : "RECIPE"} onChange={e=>setForm({...form,trackStock:e.target.value==="PRODUCT"})}>
+              <option value="RECIPE">Produksi dari resep / bahan baku</option>
+              <option value="PRODUCT">Produk jadi / stok langsung</option>
+            </select>
+          </label>
+          {form.trackStock && <Field label="Stok awal produk jadi" type="number" value={form.stock} onChange={v=>setForm({...form,stock:v})}/>}
+        </div>
+        <div className="menu-model-note">
+          {form.trackStock
+            ? "Contoh: minuman botol/kemasan. Penjualan mengurangi stok produk langsung."
+            : "Contoh: macaroni. Penjualan akan memakai resep, mengurangi stok bahan, dan menghitung HPP."}
+        </div>
+        <button className="primary-button" onClick={onSave}>{form.id ? "Simpan Perubahan" : "Tambah Menu"}</button>
+      </Panel>
+
+      <Panel title={"Daftar Menu ("+products.length+")"}>
+        <div className="simple-table">
+          {products.map(p=>{
+            const hasRecipe=/* populated recipes are checked outside this component later */ false;
+            return <div className="menu-master-row" key={p.id}>
+              <div className="menu-master-main">
+                <strong>{p.name}</strong>
+                <small>{p.sku} · {p.category}{p.size ? " · "+p.size : ""}</small>
+              </div>
+              <div className="menu-master-meta">
+                <strong>{p.price>0?rupiah(p.price):"Harga belum diatur"}</strong>
+                <small>{p.trackStock ? "Produk jadi · stok "+p.stock : "Berbasis resep · HPP dari bahan"}</small>
+              </div>
+              {!p.trackStock && <button className="edit-row-button" type="button" onClick={()=>onSetupRecipe(p.id)}>Atur Resep</button>}
+            </div>;
+          })}
+          {!products.length&&<Empty text="Belum ada menu."/>}
+        </div>
+      </Panel>
+    </div>
+  </section>;
+}
 function Ingredients({
   ingredients,lowStock,form,setForm,onSave,onEdit,onReset
 }:{
@@ -822,7 +914,7 @@ function Reports({sales,expenses,products,onRecalculateHpp}:{sales:SaleRecord[];
   const avgTicket=filteredSales.length?revenue/filteredSales.length:0;
   const incompleteHpp=filteredSales.filter(s=>(Number(s.costOfGoods)||0)<=0).length;
 
-  const paymentRows=["Cash","QRIS","Debit","Transfer"].map(method=>({
+  const paymentRows=paymentMethods.map(method=>({
     method,
     count:filteredSales.filter(s=>s.paymentMethod===method).length,
     total:filteredSales.filter(s=>s.paymentMethod===method).reduce((n,s)=>n+(Number(s.total)||0),0)
