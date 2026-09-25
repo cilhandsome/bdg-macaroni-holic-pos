@@ -75,23 +75,35 @@ async function pullBundle():Promise<CloudBundle>{
   return Object.fromEntries(names.map((name,index)=>[name,values[index]])) as CloudBundle;
 }
 
-async function pushAll(){
+async function pushAll(remote: CloudBundle){
   const [outlets,users,products,ingredients,recipes,suppliers,purchases,moves,sales,shifts,expenses,audits]=await Promise.all([
     db.outlets.toArray(),db.users.toArray(),db.products.toArray(),db.ingredients.toArray(),db.recipes.toArray(),db.suppliers.toArray(),
     db.purchases.toArray(),db.stockMovements.toArray(),db.sales.filter(s=>!s.synced).toArray(),db.shifts.toArray(),db.expenses.toArray(),db.auditLogs.toArray()
   ]);
-  await request("outlets","POST",outlets.map(mapOutletCloud));
-  await request("users","POST",users.map(mapUserCloud));
-  await request("products","POST",products.map(mapProductCloud));
-  await request("ingredients","POST",ingredients.map(mapIngredientCloud));
-  await request("recipes","POST",recipes.map(mapRecipeCloud));
-  await request("suppliers","POST",suppliers.map(mapSupplierCloud));
-  await request("purchases","POST",purchases.map(mapPurchaseCloud));
-  await request("stock_movements","POST",moves.map(mapMoveCloud));
-  await request("sales","POST",sales.map(mapSaleCloud));
-  await request("shifts","POST",shifts.map(mapShiftCloud));
-  await request("expenses","POST",expenses.map(mapExpenseCloud));
-  await request("audit_logs","POST",audits.map(mapAuditCloud));
+
+  const newer=(local:any, cloud:any)=>!cloud || String(local.updatedAt||"")>String(cloud.updated_at||"");
+  const byId=(rows:Row[])=>new Map(rows.map(r=>[r.id,r]));
+  const ro=byId(remote.outlets), ru=byId(remote.users), rp=byId(remote.products), ri=byId(remote.ingredients), rr=byId(remote.recipes), rsu=byId(remote.suppliers);
+  const changedOutlets=outlets.filter(x=>newer(x,ro.get(x.id)));
+  const changedUsers=users.filter(x=>newer(x,ru.get(x.id)));
+  const changedProducts=products.filter(x=>newer(x,rp.get(x.id)));
+  const changedIngredients=ingredients.filter(x=>newer(x,ri.get(x.id)));
+  const changedRecipes=recipes.filter(x=>newer(x,rr.get(x.id)));
+  const changedSuppliers=suppliers.filter(x=>newer(x,rsu.get(x.id)));
+
+  if(changedOutlets.length) await request("outlets","POST",changedOutlets.map(mapOutletCloud));
+  if(changedUsers.length) await request("users","POST",changedUsers.map(mapUserCloud));
+  if(changedProducts.length) await request("products","POST",changedProducts.map(mapProductCloud));
+  if(changedIngredients.length) await request("ingredients","POST",changedIngredients.map(mapIngredientCloud));
+  if(changedRecipes.length) await request("recipes","POST",changedRecipes.map(mapRecipeCloud));
+  if(changedSuppliers.length) await request("suppliers","POST",changedSuppliers.map(mapSupplierCloud));
+  if(purchases.length) await request("purchases","POST",purchases.map(mapPurchaseCloud));
+  if(moves.length) await request("stock_movements","POST",moves.map(mapMoveCloud));
+  if(sales.length) await request("sales","POST",sales.map(mapSaleCloud));
+  if(shifts.length) await request("shifts","POST",shifts.map(mapShiftCloud));
+  if(expenses.length) await request("expenses","POST",expenses.map(mapExpenseCloud));
+  if(audits.length) await request("audit_logs","POST",audits.map(mapAuditCloud));
+
   if(sales.length) await db.sales.bulkPut(sales.map(s=>({...s,synced:true})));
   return sales.length;
 }
@@ -144,12 +156,21 @@ export async function syncNow(){
   const remote=await pullBundle();
   const hasCloudData=remote.outlets.length||remote.products.length||remote.ingredients.length||remote.sales.length;
   const cloudBootstrapped=(await db.settings.get("cloudBootstrapV1"))?.value==="done";
-  if(hasCloudData || cloudBootstrapped){
+
+  // First device with an empty cloud publishes local data. A new device with existing
+  // cloud data pulls it first so seeded local defaults cannot overwrite the cloud.
+  if(!cloudBootstrapped && hasCloudData){
     await writeRemoteToLocal(remote);
+    await db.settings.put({key:"cloudBootstrapV1",value:"done"});
+    return {configured:true,pushed:0,pulled:remote.sales.length};
   }
-  const pushed=await pushAll();
+
+  // After bootstrap, publish only local records newer than the cloud copy, then pull again.
+  const pushed=await pushAll(remote);
+  const latest=await pullBundle();
+  await writeRemoteToLocal(latest);
   await db.settings.put({key:"cloudBootstrapV1",value:"done"});
-  return {configured:true,pushed,pulled:remote.sales.length};
+  return {configured:true,pushed,pulled:latest.sales.length};
 }
 
 export async function syncPending(){ return syncNow(); }
