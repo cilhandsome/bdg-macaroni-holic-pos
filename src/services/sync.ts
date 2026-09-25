@@ -1,4 +1,4 @@
-import { db, type IngredientRecord, type ProductRecord, type RecipeRecord, type SaleRecord, type SupplierRecord, type PurchaseRecord, type StockMovementRecord, type ShiftRecord, type ExpenseRecord, type OutletRecord, type UserRecord, type AuditLogRecord } from "../db/db";
+import { db, type IngredientRecord, type ProductRecord, type RecipeRecord, type SaleRecord, type SupplierRecord, type PurchaseRecord, type StockMovementRecord, type ShiftRecord, type ExpenseRecord, type OutletRecord, type UserRecord, type AuditLogRecord, type PromoRecord } from "../db/db";
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
@@ -38,7 +38,7 @@ const mapPurchase=(p:any):PurchaseRecord=>({id:p.id,invoiceNo:p.invoice_no,suppl
 const mapPurchaseCloud=(p:PurchaseRecord)=>({id:p.id,invoice_no:p.invoiceNo,supplier_id:p.supplierId,ingredient_id:p.ingredientId,quantity:p.quantity,unit:p.unit,total_cost:p.totalCost,unit_cost:p.unitCost,created_at:p.createdAt});
 const mapMove=(m:any):StockMovementRecord=>({id:m.id,ingredientId:m.ingredient_id,type:m.type,quantity:Number(m.quantity)||0,reason:m.reason,referenceId:m.reference_id||undefined,createdAt:m.created_at});
 const mapMoveCloud=(m:StockMovementRecord)=>({id:m.id,ingredient_id:m.ingredientId,type:m.type,quantity:m.quantity,reason:m.reason,reference_id:m.referenceId||null,created_at:m.createdAt});
-const mapSale=(s:any):SaleRecord=>({id:s.id,invoiceNo:s.invoice_no,orderType:s.order_type,tableNumber:s.table_number||"",paymentMethod:s.payment_method,subtotal:Number(s.subtotal)||0,discount:Number(s.discount)||0,total:Number(s.total)||0,cashReceived:Number(s.cash_received)||0,change:Number(s.change)||0,costOfGoods:Number(s.cost_of_goods)||0,items:s.items||[],createdAt:s.created_at,outletId:s.outlet_id||"",userId:s.user_id||"",synced:true});
+const mapSale=(s:any):SaleRecord=>({id:s.id,invoiceNo:s.invoice_no,orderType:s.order_type,tableNumber:s.table_number||"",paymentMethod:s.payment_method,subtotal:Number(s.subtotal)||0,discount:Number(s.discount)||0,total:Number(s.total)||0,cashReceived:Number(s.cash_received)||0,change:Number(s.change)||0,costOfGoods:Number(s.cost_of_goods)||0,items:s.items||[],createdAt:s.created_at,outletId:s.outlet_id||"",userId:s.user_id||"",promoId:s.promo_id||undefined,promoCode:s.promo_code||undefined,promoName:s.promo_name||undefined,synced:true});
 const mapSaleCloud=(s:SaleRecord)=>({id:s.id,invoice_no:s.invoiceNo,order_type:s.orderType,table_number:s.tableNumber,payment_method:s.paymentMethod,subtotal:s.subtotal,discount:s.discount,total:s.total,cash_received:s.cashReceived,change:s.change,cost_of_goods:s.costOfGoods,items:s.items,created_at:s.createdAt,outlet_id:s.outletId,user_id:s.userId,synced:true});
 const mapShift=(s:any):ShiftRecord=>({id:s.id,outletId:s.outlet_id||"",userId:s.user_id||"",openingCash:Number(s.opening_cash)||0,closingCash:s.closing_cash==null?undefined:Number(s.closing_cash),expectedCash:s.expected_cash==null?undefined:Number(s.expected_cash),variance:s.variance==null?undefined:Number(s.variance),startedAt:s.started_at,endedAt:s.ended_at||undefined,status:s.status});
 const mapShiftCloud=(s:ShiftRecord)=>({id:s.id,outlet_id:s.outletId,user_id:s.userId,opening_cash:s.openingCash,closing_cash:s.closingCash??null,expected_cash:s.expectedCash??null,variance:s.variance??null,started_at:s.startedAt,ended_at:s.endedAt??null,status:s.status});
@@ -50,6 +50,24 @@ const mapUser=(u:any):UserRecord=>({id:u.id,name:u.name,username:u.username,role
 const mapUserCloud=(u:UserRecord)=>({id:u.id,name:u.name,username:u.username,role:u.role,outlet_id:u.outletId,active:u.active,updated_at:u.updatedAt});
 const mapAudit=(a:any):AuditLogRecord=>({id:a.id,userId:a.user_id||"",action:a.action,entity:a.entity,entityId:a.entity_id,detail:a.detail||"",createdAt:a.created_at});
 const mapAuditCloud=(a:AuditLogRecord)=>({id:a.id,user_id:a.userId,action:a.action,entity:a.entity,entity_id:a.entityId,detail:a.detail,created_at:a.createdAt});
+
+function parsePromoAudit(a:any): PromoRecord | null {
+  if(a?.entity!=="PROMO" || a?.action!=="UPSERT") return null;
+  try {
+    const promo=JSON.parse(a.detail||"null");
+    if(!promo?.id || !promo?.code) return null;
+    return promo as PromoRecord;
+  } catch { return null; }
+}
+
+function parseSalePromoAudit(a:any) {
+  if(a?.entity!=="SALE_PROMO" || a?.action!=="UPSERT") return null;
+  try {
+    const meta=JSON.parse(a.detail||"null");
+    if(!meta?.saleId) return null;
+    return meta as {saleId:string;promoId?:string;promoCode?:string;promoName?:string};
+  } catch { return null; }
+}
 
 async function pullBundle():Promise<CloudBundle>{
   const names=["outlets","users","products","ingredients","recipes","suppliers","purchases","stock_movements","sales","shifts","expenses","audit_logs"];
@@ -98,7 +116,23 @@ async function writeRemoteToLocal(remote:CloudBundle){
   if(remote.sales.length) await db.sales.bulkPut(remote.sales.map(mapSale));
   if(remote.shifts.length) await db.shifts.bulkPut(remote.shifts.map(mapShift));
   if(remote.expenses.length) await db.expenses.bulkPut(remote.expenses.map(mapExpense));
-  if(remote.audit_logs.length) await db.auditLogs.bulkPut(remote.audit_logs.map(mapAudit));
+  if(remote.audit_logs.length) {
+    await db.auditLogs.bulkPut(remote.audit_logs.map(mapAudit));
+    const promoRows = new Map<string, PromoRecord>();
+    const salePromoRows = new Map<string, {saleId:string;promoId?:string;promoCode?:string;promoName?:string}>();
+    for(const row of remote.audit_logs){
+      const promo=parsePromoAudit(row); if(promo) promoRows.set(promo.id,promo);
+      const salePromo=parseSalePromoAudit(row); if(salePromo) salePromoRows.set(salePromo.saleId,salePromo);
+    }
+    if(promoRows.size) await db.promos.bulkPut([...promoRows.values()]);
+    if(salePromoRows.size){
+      const remoteSales=await db.sales.toArray();
+      for(const sale of remoteSales){
+        const meta=salePromoRows.get(sale.id);
+        if(meta) await db.sales.update(sale.id,{promoId:meta.promoId,promoCode:meta.promoCode,promoName:meta.promoName});
+      }
+    }
+  }
 }
 
 export async function syncNow(){
