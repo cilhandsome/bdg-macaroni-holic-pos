@@ -454,7 +454,9 @@ export default function App(){
     setAuthUser(null);
     setContext(null);
     setCart([]);
+    setSelectedPromoId("");
     setPaymentOpen(false);
+    setPromoOpen(false);
     setReceiptSale(null);
     setView("dashboard");
   }
@@ -1313,7 +1315,7 @@ function Reports({sales,expenses,products,onRecalculateHpp}:{sales:SaleRecord[];
 
 function AdminList({title,items,selected,setSelected,onEdit}:{title:string;items:Array<{id:string;title:string;meta:string}>;selected:string;setSelected:(v:string)=>void;onEdit:()=>void}){return <section className="page-section"><Panel title={title}><div className="simple-table">{items.map(i=><button className={selected===i.id?"table-row clickable selected-row":"table-row clickable"} key={i.id} onClick={()=>setSelected(i.id)}><div><strong>{i.title}</strong><small>{i.meta}</small></div><span>›</span></button>)}</div><button className="primary-button" disabled={!selected} onClick={onEdit}>Edit Dipilih</button></Panel></section>}
 function Users({users,selected,setSelected,onEdit,onActivate}:{users:UserRecord[];selected:string;setSelected:(v:string)=>void;onEdit:()=>void;onActivate:(u:UserRecord)=>void}){return <section className="page-section"><Panel title="Pengguna"><div className="simple-table">{users.map(u=><div className={selected===u.id?"table-row selected-row":"table-row"} key={u.id} onClick={()=>setSelected(u.id)}><div><strong>{u.name}</strong><small>{u.username} · {u.role}</small></div><button className="secondary-button" onClick={()=>onActivate(u)}>Aktifkan</button></div>)}</div><button className="primary-button" disabled={!selected} onClick={onEdit}>Edit Nama</button></Panel></section>}
-function Settings({onBackup,onRestore,onSync}:{onBackup:()=>void;onRestore:(f:File)=>void;onSync:()=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Backup & Restore"><button className="primary-button" onClick={onBackup}>Download Backup JSON</button><label className="upload-button">Restore Backup<input type="file" accept="application/json" onChange={e=>{const f=e.target.files?.[0];if(f)onRestore(f);}}/></label></Panel><Panel title="Cloud Sync"><p className="setting-copy">Isi VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY ketika database cloud siap dipakai.</p><button className="secondary-button wide" onClick={onSync}>Coba Sync Sekarang</button></Panel></div></section>}
+function Settings({onBackup,onRestore,onSync}:{onBackup:()=>void;onRestore:(f:File)=>void;onSync:()=>void}){return <section className="page-section"><div className="content-grid"><Panel title="Backup & Restore"><button className="primary-button" onClick={onBackup}>Download Backup JSON</button><label className="upload-button">Restore Backup<input type="file" accept="application/json" onChange={e=>{const f=e.target.files?.[0];if(f)onRestore(f);}}/></label></Panel><Panel title="Cloud Sync"><p className="setting-copy">POS menggunakan VITE_SUPABASE_URL dan Supabase Publishable Key. Data promo juga ikut disinkronkan melalui audit log cloud.</p><button className="secondary-button wide" onClick={onSync}>Coba Sync Sekarang</button></Panel></div></section>}
 function Receipt({sale,onClose}:{sale:SaleRecord;onClose:()=>void}){
   const items = Array.isArray(sale.items) ? sale.items : [];
   return <div className="modal-backdrop">
