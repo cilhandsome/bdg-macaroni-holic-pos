@@ -6,7 +6,7 @@ import {
   type OutletRecord, type UserRecord, type StockMovementRecord
 } from "./db/db";
 import { getCurrentContext, loadActiveProducts, seedDatabase } from "./db/seed";
-import { cloudSyncConfigured, syncPending } from "./services/sync";
+import { cloudSyncConfigured, syncNow } from "./services/sync";
 import { getAuthenticatedUser, loginLocal, logoutLocal } from "./services/auth";
 
 type View = "dashboard" | "pos" | "history" | "products" | "ingredients" | "recipes" | "purchases" | "stock" | "expenses" | "shift" | "reports" | "outlets" | "users" | "settings";
@@ -147,6 +147,7 @@ export default function App(){
   const [expenseForm,setExpenseForm]=useState({category:"Operasional",description:"",amount:"",paymentMethod:"Cash"});
   const [openingCash,setOpeningCash]=useState(""); const [closingCash,setClosingCash]=useState("");
   const [selectedId,setSelectedId]=useState("");
+  const [syncing,setSyncing]=useState(false);
 
   const refresh=async()=>{
     const [p,i,r,s,pu,e,sh,sm,su,o,u,c]=await Promise.all([
@@ -161,6 +162,10 @@ export default function App(){
   useEffect(()=>{void(async()=>{
     try{
       await seedDatabase();
+      if(cloudSyncConfigured()){
+        setSyncing(true);
+        try{await syncNow();}finally{setSyncing(false);}
+      }
       const session=await getAuthenticatedUser();
       if(session){
         setAuthUser(session);
@@ -172,6 +177,19 @@ export default function App(){
       setLoading(false);
     }
   })();},[]);
+
+  useEffect(()=>{
+    if(!authUser || !cloudSyncConfigured()) return;
+    const run=async()=>{
+      try{setSyncing(true);await syncNow();await refresh();}
+      catch(e){console.error("Background sync failed",e);}
+      finally{setSyncing(false);}
+    };
+    const timer=window.setInterval(()=>void run(),30000);
+    const onOnline=()=>void run();
+    window.addEventListener("online",onOnline);
+    return()=>{window.clearInterval(timer);window.removeEventListener("online",onOnline);};
+  },[authUser]);
 
   const filteredProducts=useMemo(()=>{
     const familyOrder=[
@@ -400,6 +418,7 @@ export default function App(){
   async function handleLogin(username:string,password:string){
     const user=await loginLocal(username,password);
     setAuthUser(user);
+    if(cloudSyncConfigured()){setSyncing(true);try{await syncNow();}finally{setSyncing(false);}}
     setView(user.role==="CASHIER"?"pos":"dashboard");
     setNotice("Selamat datang, "+user.name+".");
     await refresh();
@@ -549,8 +568,13 @@ export default function App(){
     }catch(e){setError("Backup tidak valid atau gagal dipulihkan.");}
   }
   async function doSync(){
-    try{const r=await syncPending();setNotice(r.configured?"Sinkronisasi selesai: "+r.synced+" transaksi.":"Supabase belum dikonfigurasi; mode offline tetap aktif.");await refresh();}
-    catch(e){setError(e instanceof Error?e.message:"Sinkronisasi gagal.");}
+    try{
+      setSyncing(true);
+      const r=await syncNow();
+      await refresh();
+      setNotice(r.configured?"Sinkronisasi selesai. Data lokal dan cloud diperbarui.":"Supabase belum dikonfigurasi; mode offline tetap aktif.");
+    }catch(e){setError(e instanceof Error?e.message:"Sinkronisasi gagal.");}
+    finally{setSyncing(false);}
   }
   async function clearTransactionHistory(){
     const confirmed=window.confirm("Hapus seluruh riwayat transaksi lokal? Data penjualan akan dihapus dan tidak dapat dipulihkan dari aplikasi ini.");
@@ -601,7 +625,7 @@ export default function App(){
     <main className="main-stage">
       <header className="global-header">
         <div><div className="header-kicker">{context?.outlet.name}</div><h1>{nav.find(n=>n[0]===view)?.[1]}</h1></div>
-        <div className="global-actions"><div className="connection-pill"><span/>{navigator.onLine?"Online":"Offline"}</div><button className="header-button" onClick={()=>void doSync()}>Sync</button><button className="header-user" onClick={()=>void handleLogout()}>{context?.user.name} · {context?.user.role} · Keluar</button></div>
+        <div className="global-actions"><div className="connection-pill"><span/>{navigator.onLine?"Online":"Offline"}</div><button className="header-button" onClick={()=>void doSync()} disabled={syncing}>{syncing?"Syncing…":"Sync"}</button><button className="header-user" onClick={()=>void handleLogout()}>{context?.user.name} · {context?.user.role} · Keluar</button></div>
       </header>
       {notice&&<div className="global-notice success">{notice}<button onClick={()=>setNotice("")}>×</button></div>}
       {error&&<div className="global-notice error">{error}<button onClick={()=>setError("")}>×</button></div>}
