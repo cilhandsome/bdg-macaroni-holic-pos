@@ -85,7 +85,7 @@ export default function App(){
   const [paymentMethod,setPaymentMethod]=useState("Cash"); const [cashReceived,setCashReceived]=useState("");
   const [receiptSale,setReceiptSale]=useState<SaleRecord|null>(null);
 
-  const [productForm,setProductForm]=useState({id:"",sku:"",name:"",size:"" as ""|"S"|"M"|"L",category:"Macaroni" as Exclude<Category,"Semua">,price:"",stock:"",trackStock:false});
+  const [productForm,setProductForm]=useState({id:"",sku:"",name:"",size:"" as ""|"S"|"M"|"L",category:"Macaroni" as Exclude<Category,"Semua">,price:"",stock:"",productCost:"",trackStock:false});
   const [ingredientForm,setIngredientForm]=useState({id:"",sku:"",name:"",category:"Bahan utama",unit:"g",stock:"",minStock:"",costPerUnit:"",includeInHpp:true,priceMode:"RO" as "RO"|"MARKET"|"MANUAL",packageSize:"",purchasePrice:"",yieldMultiplier:"1"});
   const [recipeForm,setRecipeForm]=useState({productId:"",ingredientId:"",qty:""});
   const [purchaseForm,setPurchaseForm]=useState({ingredientId:"",supplierId:"",quantity:"",totalCost:""});
@@ -220,17 +220,21 @@ export default function App(){
         const p = await db.products.get(item.id);
         if (!p) throw new Error("Produk tidak ditemukan.");
         const recipe = await db.recipes.where("productId").equals(p.id).first();
-        if (recipe) {
-          for (const line of recipe.items) {
+        const usableRecipe = recipe && recipe.items.length ? recipe : undefined;
+        if (usableRecipe) {
+          for (const line of usableRecipe.items) {
             const ing = await db.ingredients.get(line.ingredientId);
             const needed = line.quantity * item.qty;
             if (!ing || ing.stock < needed) throw new Error("Stok " + (ing?.name ?? "bahan") + " tidak mencukupi.");
-            if (ing.includeInHpp !== false) cogs += ing.costPerUnit * line.quantity * item.qty;
+            if (ing.includeInHpp !== false) cogs += (Number(ing.costPerUnit)||0) * line.quantity * item.qty;
           }
-        } else if (p.trackStock && p.stock < item.qty) {
-          throw new Error("Stok " + p.name + " tidak mencukupi.");
+        } else if (p.trackStock) {
+          if (p.stock < item.qty) throw new Error("Stok " + p.name + " tidak mencukupi.");
+          cogs += (Number(p.productCost)||0) * item.qty;
+        } else {
+          throw new Error("Menu " + p.name + " belum memiliki resep. Atur resepnya di Produk → Atur Resep sebelum dijual.");
         }
-        validated.push({ item, recipe });
+        validated.push({ item, recipe: usableRecipe });
       }
 
       for (const { item, recipe } of validated) {
@@ -301,6 +305,7 @@ export default function App(){
       category:productForm.category,
       price:Number(productForm.price)||0,
       stock:productForm.trackStock ? Number(productForm.stock)||0 : 0,
+      productCost:productForm.trackStock ? Number(productForm.productCost)||0 : 0,
       emoji:productForm.category==="Drink" ? "🥤" : productForm.category==="Snack" ? "🍟" : productForm.category==="Topping" ? "🧀" : "🍝",
       active:true,
       trackStock:productForm.trackStock,
@@ -314,7 +319,7 @@ export default function App(){
     }else{
       setNotice("Menu tersimpan. Langkah berikutnya: atur resep di Resep & HPP agar stok bahan dan HPP otomatis mengikuti penjualan.");
     }
-    setProductForm({id:"",sku:"",name:"",size:"",category:"Macaroni",price:"",stock:"",trackStock:false});
+    setProductForm({id:"",sku:"",name:"",size:"",category:"Macaroni",price:"",stock:"",productCost:"",trackStock:false});
   }
   function editIngredient(ingredient: IngredientRecord){
     setIngredientForm({
@@ -471,7 +476,7 @@ export default function App(){
       {view==="dashboard"&&<Dashboard sales={todaySales} revenue={todayRevenue} cogs={todayCogs} expense={todayExpense} lowStock={lowStock}/>}
       {view==="pos"&&<POS categories={availableCategories} category={category} setCategory={setCategory} products={filteredProducts} query={query} setQuery={setQuery} addCart={addCart} cart={cart} clearCart={()=>setCart([])} changeQty={changeQty} total={total} cartSubtotal={cartSubtotal} orderType={orderType} setOrderType={setOrderType} tableNumber={tableNumber} setTableNumber={setTableNumber} onPay={()=>setPaymentOpen(true)}/>}
       {view==="history"&&<History sales={sales} onOpen={setReceiptSale} onClear={()=>void clearTransactionHistory()}/>} 
-      {view==="products"&&<Products products={products} form={productForm} setForm={setProductForm} onSave={()=>void saveProduct()} onSetupRecipe={(productId)=>{setRecipeForm(x=>({...x,productId}));setView("recipes");setNotice("Produk dipilih. Silakan tambahkan komponen resep.");}}/>}
+      {view==="products"&&<Products products={products} recipes={recipes} form={productForm} setForm={setProductForm} onSave={()=>void saveProduct()} onSetupRecipe={(productId)=>{setRecipeForm(x=>({...x,productId}));setView("recipes");setNotice("Produk dipilih. Silakan tambahkan komponen resep.");}}/>}
       {view==="ingredients"&&<Ingredients ingredients={ingredients} lowStock={lowStock} form={ingredientForm} setForm={setIngredientForm} onSave={()=>void saveIngredient()} onEdit={editIngredient} onReset={resetIngredientForm}/>} 
       {view==="recipes"&&<Recipes products={products} ingredients={ingredients} recipes={recipes} form={recipeForm} setForm={setRecipeForm} cost={recipeCost} onAdd={()=>void addRecipeItem()} onRemove={(r,i)=>void removeRecipeItem(r,i)}/>}
       {view==="purchases"&&<Purchases ingredients={ingredients} suppliers={suppliers} purchases={purchases} form={purchaseForm} setForm={setPurchaseForm} onSave={()=>void receivePurchase()}/>}
@@ -629,19 +634,19 @@ function History({sales,onOpen,onClear}:{sales:SaleRecord[];onOpen:(s:SaleRecord
   </section>;
 }
 function Products({
-  products,form,setForm,onSave,onSetupRecipe
+  products,recipes,form,setForm,onSave,onSetupRecipe
 }:{
   products:ProductRecord[];
+  recipes:RecipeRecord[];
   form:any;
   setForm:(v:any)=>void;
   onSave:()=>void;
   onSetupRecipe:(productId:string)=>void;
 }){
-  const resetForm=()=>setForm({id:"",sku:"",name:"",size:"",category:"Macaroni",price:"",stock:"",trackStock:false});
-  const recipeReady=(productId:string)=>products.some(p=>p.id===productId) ? false : false;
+  const resetForm=()=>setForm({id:"",sku:"",name:"",size:"",category:"Macaroni",price:"",stock:"",productCost:"",trackStock:false});
   return <section className="page-section">
     <div className="products-toolbar">
-      <div><div className="page-kicker">Menu</div><h2>Master Menu</h2><p>Menu bisa ditambahkan dulu, kemudian resep/HPP diatur terpisah.</p></div>
+      <div><div className="page-kicker">Menu</div><h2>Master Menu</h2><p>Tambah menu dulu, lalu tentukan apakah stok dari resep atau stok produk jadi.</p></div>
       <button className="primary-button toolbar-button" type="button" onClick={resetForm}>＋ Tambah Menu</button>
     </div>
     <div className="content-grid">
@@ -649,29 +654,19 @@ function Products({
         <div className="form-grid">
           <Field label="SKU" value={form.sku} onChange={v=>setForm({...form,sku:v})}/>
           <Field label="Nama menu" value={form.name} onChange={v=>setForm({...form,name:v})}/>
-          <label className="field">Ukuran
-            <select value={form.size} onChange={e=>setForm({...form,size:e.target.value})}>
-              <option value="">Tanpa ukuran</option><option value="S">S</option><option value="M">M</option><option value="L">L</option>
-            </select>
-          </label>
-          <label className="field">Kategori
-            <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>
-              {allCategories.map(x=><option key={x}>{x}</option>)}
-            </select>
-          </label>
+          <label className="field">Ukuran<select value={form.size} onChange={e=>setForm({...form,size:e.target.value})}><option value="">Tanpa ukuran</option><option value="S">S</option><option value="M">M</option><option value="L">L</option></select></label>
+          <label className="field">Kategori<select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>{allCategories.map(x=><option key={x}>{x}</option>)}</select></label>
           <Field label="Harga jual" type="number" value={form.price} onChange={v=>setForm({...form,price:v})}/>
-          <label className="field">Model stok
-            <select value={form.trackStock ? "PRODUCT" : "RECIPE"} onChange={e=>setForm({...form,trackStock:e.target.value==="PRODUCT"})}>
-              <option value="RECIPE">Produksi dari resep / bahan baku</option>
-              <option value="PRODUCT">Produk jadi / stok langsung</option>
-            </select>
-          </label>
-          {form.trackStock && <Field label="Stok awal produk jadi" type="number" value={form.stock} onChange={v=>setForm({...form,stock:v})}/>}
+          <label className="field">Model stok<select value={form.trackStock?"PRODUCT":"RECIPE"} onChange={e=>setForm({...form,trackStock:e.target.value==="PRODUCT"})}><option value="RECIPE">Produksi dari resep / bahan baku</option><option value="PRODUCT">Produk jadi / stok langsung</option></select></label>
+          {form.trackStock && <>
+            <Field label="HPP produk jadi / unit" type="number" value={form.productCost} onChange={v=>setForm({...form,productCost:v})}/>
+            <Field label="Stok awal produk jadi" type="number" value={form.stock} onChange={v=>setForm({...form,stock:v})}/>
+          </>}
         </div>
         <div className="menu-model-note">
           {form.trackStock
-            ? "Contoh: minuman botol/kemasan. Penjualan mengurangi stok produk langsung."
-            : "Contoh: macaroni. Penjualan akan memakai resep, mengurangi stok bahan, dan menghitung HPP."}
+            ? "Produk jadi cocok untuk minuman botol, air mineral, atau barang yang dibeli lalu dijual kembali. Penjualan mengurangi stok produk dan memakai HPP/unit."
+            : "Berbasis resep cocok untuk macaroni/snack produksi. Penjualan akan mengurangi bahan sesuai resep dan menghitung HPP otomatis."}
         </div>
         <button className="primary-button" onClick={onSave}>{form.id ? "Simpan Perubahan" : "Tambah Menu"}</button>
       </Panel>
@@ -679,7 +674,8 @@ function Products({
       <Panel title={"Daftar Menu ("+products.length+")"}>
         <div className="simple-table">
           {products.map(p=>{
-            const hasRecipe=/* populated recipes are checked outside this component later */ false;
+            const recipe=recipes.find(r=>r.productId===p.id);
+            const recipeReady=Boolean(recipe && recipe.items.length);
             return <div className="menu-master-row" key={p.id}>
               <div className="menu-master-main">
                 <strong>{p.name}</strong>
@@ -687,9 +683,9 @@ function Products({
               </div>
               <div className="menu-master-meta">
                 <strong>{p.price>0?rupiah(p.price):"Harga belum diatur"}</strong>
-                <small>{p.trackStock ? "Produk jadi · stok "+p.stock : "Berbasis resep · HPP dari bahan"}</small>
+                <small>{p.trackStock ? "Produk jadi · stok "+p.stock+" · HPP "+rupiah(p.productCost||0) : (recipeReady ? "Resep siap · HPP terhubung" : "Resep belum diatur")}</small>
               </div>
-              {!p.trackStock && <button className="edit-row-button" type="button" onClick={()=>onSetupRecipe(p.id)}>Atur Resep</button>}
+              {!p.trackStock && <button className="edit-row-button" type="button" onClick={()=>onSetupRecipe(p.id)}>{recipeReady ? "Edit Resep" : "Atur Resep"}</button>}
             </div>;
           })}
           {!products.length&&<Empty text="Belum ada menu."/>}
@@ -698,6 +694,7 @@ function Products({
     </div>
   </section>;
 }
+
 function Ingredients({
   ingredients,lowStock,form,setForm,onSave,onEdit,onReset
 }:{
