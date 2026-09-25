@@ -846,7 +846,7 @@ function History({sales,onOpen,onClear}:{sales:SaleRecord[];onOpen:(s:SaleRecord
           <button className="table-row clickable" key={String(s.id)} type="button" onClick={() => onOpen(s)}>
             <div>
               <strong>{s.invoiceNo || "Tanpa nomor"}</strong>
-              <small>{s.createdAt ? dateLabel(s.createdAt) : "Tanggal tidak tersedia"} · {s.paymentMethod || "—"} · {s.orderType || "—"}</small>
+              <small>{s.createdAt ? dateLabel(s.createdAt) : "Tanggal tidak tersedia"} · {s.paymentMethod || "—"} · {s.orderType || "—"}{s.promoCode ? " · Promo "+s.promoCode : ""}</small>
             </div>
             <strong>{rupiah(Number(s.total) || 0)}</strong>
           </button>
