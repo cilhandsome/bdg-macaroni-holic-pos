@@ -7,10 +7,63 @@ import {
 } from "./db/db";
 import { getCurrentContext, loadActiveProducts, seedDatabase } from "./db/seed";
 import { cloudSyncConfigured, syncPending } from "./services/sync";
+import { getAuthenticatedUser, loginLocal, logoutLocal } from "./services/auth";
 
 type View = "dashboard" | "pos" | "history" | "products" | "ingredients" | "recipes" | "purchases" | "stock" | "expenses" | "shift" | "reports" | "outlets" | "users" | "settings";
 type Category = "Semua" | "Macaroni" | "Snack" | "Drink" | "Topping";
 type CartItem = ProductRecord & { qty: number };
+type Role = UserRecord["role"];
+
+const roleViews: Record<Role, View[]> = {
+  CASHIER: ["dashboard","pos","history","shift"],
+  SUPERVISOR: ["dashboard","pos","history","products","ingredients","recipes","purchases","stock","expenses","shift","reports"],
+  OWNER: ["dashboard","pos","history","products","ingredients","recipes","purchases","stock","expenses","shift","reports","outlets","users","settings"],
+};
+
+function LoginScreen({onLogin}:{onLogin:(username:string,password:string)=>Promise<void>}){
+  const [username,setUsername]=useState("");
+  const [password,setPassword]=useState("");
+  const [busy,setBusy]=useState(false);
+  const [error,setError]=useState("");
+
+  async function submit(e:React.FormEvent){
+    e.preventDefault();
+    if(!username||!password){setError("Username dan password wajib diisi.");return;}
+    setBusy(true);setError("");
+    try{await onLogin(username,password);}
+    catch(err){setError(err instanceof Error?err.message:"Login gagal.");}
+    finally{setBusy(false);}
+  }
+
+  return <div className="login-screen">
+    <div className="login-card">
+      <div className="login-brand">
+        <div className="login-mark">MH</div>
+        <div><strong>MACARONI HOLIC</strong><small>POINT OF SALE</small></div>
+      </div>
+      <div className="login-title">
+        <div className="page-kicker">Secure Access</div>
+        <h1>Masuk ke POS</h1>
+        <p>Gunakan akun sesuai role Anda.</p>
+      </div>
+      <form onSubmit={submit}>
+        <label className="field">Username<input autoFocus autoComplete="username" value={username} onChange={e=>setUsername(e.target.value)} placeholder="username"/></label>
+        <label className="field">Password<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="password"/></label>
+        {error&&<div className="login-error">{error}</div>}
+        <button className="primary-button" type="submit" disabled={busy}>{busy?"Memeriksa…":"Masuk"}</button>
+      </form>
+      <div className="login-info">
+        <strong>Akun demo lokal</strong>
+        <span>Owner: owner / owner123</span>
+        <span>Supervisor: supervisor / supervisor123</span>
+        <span>Kasir: admin / admin123</span>
+        <small>Ganti password sebelum digunakan di outlet nyata.</small>
+      </div>
+    </div>
+  </div>;
+}
+
+
 
 class ErrorBoundary extends Component<{
   children: ReactNode;
@@ -76,6 +129,7 @@ export default function App(){
   const [outlets,setOutlets]=useState<OutletRecord[]>([]);
   const [users,setUsers]=useState<UserRecord[]>([]);
   const [context,setContext]=useState<{outlet:OutletRecord;user:UserRecord}|null>(null);
+  const [authUser,setAuthUser]=useState<UserRecord|null>(null);
   const [loading,setLoading]=useState(true);
   const [notice,setNotice]=useState(""); const [error,setError]=useState("");
 
@@ -104,7 +158,20 @@ export default function App(){
     setProducts(p);setIngredients(i);setRecipes(r);setSales(s);setPurchases(pu);setExpenses(e);setShifts(sh);setStockMoves(sm);setSuppliers(su);setOutlets(o);setUsers(u);setContext(c);
   };
 
-  useEffect(()=>{void(async()=>{try{await seedDatabase();await refresh();}catch(e){setError(e instanceof Error?e.message:"Aplikasi gagal dimuat.");}finally{setLoading(false);}})();},[]);
+  useEffect(()=>{void(async()=>{
+    try{
+      await seedDatabase();
+      const session=await getAuthenticatedUser();
+      if(session){
+        setAuthUser(session);
+        await refresh();
+      }
+    }catch(e){
+      setError(e instanceof Error?e.message:"Aplikasi gagal dimuat.");
+    }finally{
+      setLoading(false);
+    }
+  })();},[]);
 
   const filteredProducts=useMemo(()=>{
     const familyOrder=[
@@ -330,6 +397,24 @@ export default function App(){
     }catch(e){setError(e instanceof Error?e.message:"Transaksi gagal.");}
   }
 
+  async function handleLogin(username:string,password:string){
+    const user=await loginLocal(username,password);
+    setAuthUser(user);
+    setView(user.role==="CASHIER"?"pos":"dashboard");
+    setNotice("Selamat datang, "+user.name+".");
+    await refresh();
+  }
+
+  async function handleLogout(){
+    await logoutLocal();
+    setAuthUser(null);
+    setContext(null);
+    setCart([]);
+    setPaymentOpen(false);
+    setReceiptSale(null);
+    setView("dashboard");
+  }
+
   async function saveProduct(){
     if(!productForm.name.trim()){
       setError("Nama menu wajib diisi.");
@@ -496,18 +581,22 @@ export default function App(){
     ["dashboard","Dashboard","▦"],["pos","Kasir","🛒"],["history","Transaksi","↺"],["products","Produk","🍝"],["ingredients","Bahan Baku","📦"],["recipes","Resep & HPP","🧾"],["purchases","Pembelian","🚚"],["stock","Stok","📊"],["expenses","Pengeluaran","💸"],["shift","Shift Kasir","⏱️"],["reports","Laporan","📈"],["outlets","Outlet","🏪"],["users","Pengguna","👤"],["settings","Pengaturan","⚙️"]
   ] as Array<[View,string,string]>;
 
+  const visibleNav = nav.filter(([id]) => authUser ? roleViews[authUser.role].includes(id) : false);
+
   if(loading)return <div className="loading-screen">Memuat Macaroni Holic POS…</div>;
+  if(!authUser)return <LoginScreen onLogin={handleLogin}/>;
+  if(!roleViews[authUser.role].includes(view)) setView(authUser.role==="CASHIER"?"pos":"dashboard");
 
   return <div className="app-frame">
     <aside className="main-nav">
       <div className="nav-brand"><div className="brand-mark">MH</div><div><strong>MACARONI HOLIC</strong><small>POS MANAGEMENT</small></div></div>
-      <div className="nav-menu">{nav.map(([id,label,icon])=><button key={id} className={view===id?"nav-item active":"nav-item"} onClick={()=>setView(id)}><span>{icon}</span>{label}</button>)}</div>
+      <div className="nav-menu">{visibleNav.map(([id,label,icon])=><button key={id} className={view===id?"nav-item active":"nav-item"} onClick={()=>setView(id)}><span>{icon}</span>{label}</button>)}</div>
       <div className="nav-bottom"><div className="mini-status"><span/>{cloudSyncConfigured()?"Cloud configured":"Offline-first"}</div></div>
     </aside>
     <main className="main-stage">
       <header className="global-header">
         <div><div className="header-kicker">{context?.outlet.name}</div><h1>{nav.find(n=>n[0]===view)?.[1]}</h1></div>
-        <div className="global-actions"><div className="connection-pill"><span/>{navigator.onLine?"Online":"Offline"}</div><button className="header-button" onClick={()=>void doSync()}>Sync</button><button className="header-user">{context?.user.name} · {context?.user.role}</button></div>
+        <div className="global-actions"><div className="connection-pill"><span/>{navigator.onLine?"Online":"Offline"}</div><button className="header-button" onClick={()=>void doSync()}>Sync</button><button className="header-user" onClick={()=>void handleLogout()}>{context?.user.name} · {context?.user.role} · Keluar</button></div>
       </header>
       {notice&&<div className="global-notice success">{notice}<button onClick={()=>setNotice("")}>×</button></div>}
       {error&&<div className="global-notice error">{error}<button onClick={()=>setError("")}>×</button></div>}
