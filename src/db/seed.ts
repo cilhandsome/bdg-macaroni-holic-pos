@@ -7,21 +7,21 @@ const users: UserRecord[] = [
 ];
 const suppliers: SupplierRecord[] = [{ id:"supplier-default", name:"Supplier Utama", phone:"", address:"", updatedAt:now() }];
 const products: ProductRecord[] = [
-  { id:"mc-cheese-s",sku:"MH-MC-001-S",name:"Macaroni Cheese S",category:"Macaroni",price:5000,stock:0,emoji:"🧀",active:true,trackStock:false,size:"S",updatedAt:now() },
-  { id:"mc-cheese-m",sku:"MH-MC-001-M",name:"Macaroni Cheese M",category:"Macaroni",price:10000,stock:0,emoji:"🧀",active:true,trackStock:false,size:"M",updatedAt:now() },
-  { id:"mc-cheese-l",sku:"MH-MC-001-L",name:"Macaroni Cheese L",category:"Macaroni",price:15000,stock:0,emoji:"🧀",active:true,trackStock:false,size:"L",updatedAt:now() },
+  { id:"mc-cheese-s",sku:"MH-MC-001-S",name:"Macaroni Cheese S",category:"Macaroni",price:5000,stock:0,productCost:0,emoji:"🧀",active:true,trackStock:false,size:"S",updatedAt:now() },
+  { id:"mc-cheese-m",sku:"MH-MC-001-M",name:"Macaroni Cheese M",category:"Macaroni",price:10000,stock:0,productCost:0,emoji:"🧀",active:true,trackStock:false,size:"M",updatedAt:now() },
+  { id:"mc-cheese-l",sku:"MH-MC-001-L",name:"Macaroni Cheese L",category:"Macaroni",price:15000,stock:0,productCost:0,emoji:"🧀",active:true,trackStock:false,size:"L",updatedAt:now() },
 
-  { id:"mc-bolognese-s",sku:"MH-MC-002-S",name:"Macaroni Cheese Bolognese S",category:"Macaroni",price:5000,stock:0,emoji:"🍝",active:true,trackStock:false,size:"S",updatedAt:now() },
-  { id:"mc-bolognese-m",sku:"MH-MC-002-M",name:"Macaroni Cheese Bolognese M",category:"Macaroni",price:10000,stock:0,emoji:"🍝",active:true,trackStock:false,size:"M",updatedAt:now() },
-  { id:"mc-bolognese-l",sku:"MH-MC-002-L",name:"Macaroni Cheese Bolognese L",category:"Macaroni",price:15000,stock:0,emoji:"🍝",active:true,trackStock:false,size:"L",updatedAt:now() },
+  { id:"mc-bolognese-s",sku:"MH-MC-002-S",name:"Macaroni Cheese Bolognese S",category:"Macaroni",price:5000,stock:0,productCost:0,emoji:"🍝",active:true,trackStock:false,size:"S",updatedAt:now() },
+  { id:"mc-bolognese-m",sku:"MH-MC-002-M",name:"Macaroni Cheese Bolognese M",category:"Macaroni",price:10000,stock:0,productCost:0,emoji:"🍝",active:true,trackStock:false,size:"M",updatedAt:now() },
+  { id:"mc-bolognese-l",sku:"MH-MC-002-L",name:"Macaroni Cheese Bolognese L",category:"Macaroni",price:15000,stock:0,productCost:0,emoji:"🍝",active:true,trackStock:false,size:"L",updatedAt:now() },
 
-  { id:"mc-chicken-crispy-s",sku:"MH-MC-003-S",name:"Macaroni Cheese Chicken Crispy S",category:"Macaroni",price:10000,stock:0,emoji:"🍗",active:true,trackStock:false,size:"S",updatedAt:now() },
-  { id:"mc-chicken-crispy-m",sku:"MH-MC-003-M",name:"Macaroni Cheese Chicken Crispy M",category:"Macaroni",price:15000,stock:0,emoji:"🍗",active:true,trackStock:false,size:"M",updatedAt:now() },
-  { id:"mc-chicken-crispy-l",sku:"MH-MC-003-L",name:"Macaroni Cheese Chicken Crispy L",category:"Macaroni",price:20000,stock:0,emoji:"🍗",active:true,trackStock:false,size:"L",updatedAt:now() },
+  { id:"mc-chicken-crispy-s",sku:"MH-MC-003-S",name:"Macaroni Cheese Chicken Crispy S",category:"Macaroni",price:10000,stock:0,productCost:0,emoji:"🍗",active:true,trackStock:false,size:"S",updatedAt:now() },
+  { id:"mc-chicken-crispy-m",sku:"MH-MC-003-M",name:"Macaroni Cheese Chicken Crispy M",category:"Macaroni",price:15000,stock:0,productCost:0,emoji:"🍗",active:true,trackStock:false,size:"M",updatedAt:now() },
+  { id:"mc-chicken-crispy-l",sku:"MH-MC-003-L",name:"Macaroni Cheese Chicken Crispy L",category:"Macaroni",price:20000,stock:0,productCost:0,emoji:"🍗",active:true,trackStock:false,size:"L",updatedAt:now() },
 
-  { id:"mc-bol-chicken-crispy-s",sku:"MH-MC-004-S",name:"Macaroni Cheese Bolognese Chicken Crispy S",category:"Macaroni",price:10000,stock:0,emoji:"🍝",active:true,trackStock:false,size:"S",updatedAt:now() },
-  { id:"mc-bol-chicken-crispy-m",sku:"MH-MC-004-M",name:"Macaroni Cheese Bolognese Chicken Crispy M",category:"Macaroni",price:15000,stock:0,emoji:"🍝",active:true,trackStock:false,size:"M",updatedAt:now() },
-  { id:"mc-bol-chicken-crispy-l",sku:"MH-MC-004-L",name:"Macaroni Cheese Bolognese Chicken Crispy L",category:"Macaroni",price:20000,stock:0,emoji:"🍝",active:true,trackStock:false,size:"L",updatedAt:now() }
+  { id:"mc-bol-chicken-crispy-s",sku:"MH-MC-004-S",name:"Macaroni Cheese Bolognese Chicken Crispy S",category:"Macaroni",price:10000,stock:0,productCost:0,emoji:"🍝",active:true,trackStock:false,size:"S",updatedAt:now() },
+  { id:"mc-bol-chicken-crispy-m",sku:"MH-MC-004-M",name:"Macaroni Cheese Bolognese Chicken Crispy M",category:"Macaroni",price:15000,stock:0,productCost:0,emoji:"🍝",active:true,trackStock:false,size:"M",updatedAt:now() },
+  { id:"mc-bol-chicken-crispy-l",sku:"MH-MC-004-L",name:"Macaroni Cheese Bolognese Chicken Crispy L",category:"Macaroni",price:20000,stock:0,productCost:0,emoji:"🍝",active:true,trackStock:false,size:"L",updatedAt:now() }
 ];
 const ingredients: IngredientRecord[] = [
   { id:"ing-macaroni",sku:"ING-001",name:"Macaroni Special Khas KKI",category:"Bahan utama",unit:"g",packageSize:"800 gr",purchasePrice:21000,yieldMultiplier:2,stock:0,minStock:0,costPerUnit:12.35,includeInHpp:true,priceMode:"RO",updatedAt:now() },
