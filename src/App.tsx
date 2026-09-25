@@ -724,12 +724,13 @@ function Field({label,value,onChange,type="text"}:{label:string;value:string;onC
 function Modal({title,onClose,children}:{title:string;onClose:()=>void;children:ReactNode}){return <div className="modal-backdrop"><div className="modal-box"><div className="modal-head"><h3>{title}</h3><button onClick={onClose}>×</button></div>{children}</div></div>}
 
 function POS({
-  categories,category,setCategory,products,query,setQuery,addCart,cart,clearCart,changeQty,total,cartSubtotal,
+  categories,category,setCategory,products,query,setQuery,addCart,cart,clearCart,changeQty,total,cartSubtotal,promo,promoDiscount,onPromo,onClearPromo,
   orderType,setOrderType,tableNumber,setTableNumber,onPay
 }:{
   categories:Category[]; category:Category; setCategory:(x:Category)=>void;
   products:ProductRecord[]; query:string; setQuery:(x:string)=>void; addCart:(p:ProductRecord)=>void;
   cart:CartItem[]; clearCart:()=>void; changeQty:(id:string,d:number)=>void; total:number; cartSubtotal:number;
+  promo:PromoRecord|null; promoDiscount:number; onPromo:()=>void; onClearPromo:()=>void;
   orderType:"Take Away"|"Dine In"; setOrderType:(x:"Take Away"|"Dine In")=>void;
   tableNumber:string; setTableNumber:(x:string)=>void; onPay:()=>void
 }){
@@ -817,8 +818,9 @@ function POS({
         </div>
 
         <div className="cart-summary">
+          {safeCart.length>0&&<>{promo?<div className="promo-applied"><div><strong>🎟️ {promo.code}</strong><small>{promo.name}</small></div><button type="button" onClick={onClearPromo}>×</button></div>:<button type="button" className="secondary-button wide" onClick={onPromo}>🎟️ Pilih Promo / Diskon</button>}</>}
           <div><span>Subtotal</span><strong>{rupiah(Number(cartSubtotal)||0)}</strong></div>
-          <div><span>Diskon</span><strong>{rupiah(0)}</strong></div>
+          <div><span>Diskon</span><strong>{rupiah(Number(promoDiscount)||0)}</strong></div>
           <div className="summary-total"><span>Total</span><strong>{rupiah(Number(total)||0)}</strong></div>
           <button type="button" className="pay-button" disabled={safeCart.length===0} onClick={onPay}>Bayar · {rupiah(Number(total)||0)}</button>
         </div>
