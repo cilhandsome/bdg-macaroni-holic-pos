@@ -18,3 +18,10 @@ Cloud:
 - Tombol Sync mengirim transaksi lokal yang belum tersinkron.
 
 Backup tersedia melalui Pengaturan.
+
+
+## Multi-device setup
+1. Run `supabase/schema.sql` in the Supabase SQL Editor.
+2. Copy `.env.example` to `.env` for local development and fill in the project URL and anon key.
+3. For GitHub Pages, add repository Actions secrets named `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+4. The POS keeps an IndexedDB local copy and synchronizes data both ways with Supabase when online.
