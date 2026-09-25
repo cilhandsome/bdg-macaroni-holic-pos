@@ -249,6 +249,37 @@ export async function seedDatabase(){
     await db.settings.put({key:catalogMigrationKey,value:"done"});
   }
 
+  const stockReconcileKey = "stockReconcileV1";
+  const stockReconciled = (await db.settings.get(stockReconcileKey))?.value === "done";
+  if (!stockReconciled) {
+    const movementRows = await db.stockMovements.toArray();
+    const byIngredient = new Map<string, typeof movementRows>();
+    for (const move of movementRows) {
+      const rows = byIngredient.get(move.ingredientId) ?? [];
+      rows.push(move);
+      byIngredient.set(move.ingredientId, rows);
+    }
+
+    for (const ingredient of await db.ingredients.toArray()) {
+      const rows = byIngredient.get(ingredient.id) ?? [];
+      if (ingredient.stock !== 0 || !rows.length) continue;
+
+      // Legacy movement records stored ADJUSTMENT as an absolute quantity.
+      // Rebuild only when there are no OUT movements, so the migration is conservative.
+      if (rows.some(m => m.type === "OUT")) continue;
+
+      const rebuilt = rows.reduce((sum, m) => sum + Math.abs(Number(m.quantity) || 0), 0);
+      if (rebuilt > 0) {
+        await db.ingredients.update(ingredient.id, {
+          stock: rebuilt,
+          updatedAt: now()
+        });
+      }
+    }
+
+    await db.settings.put({key:stockReconcileKey,value:"done"});
+  }
+
   const currentProducts=await db.products.toArray();
   const recipeIds=new Set((await db.recipes.toArray()).map(r=>r.productId));
   for(const product of currentProducts){
