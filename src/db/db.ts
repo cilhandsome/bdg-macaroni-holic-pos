@@ -42,7 +42,7 @@ export type OutletRecord = {
 };
 export type UserRecord = {
   id: string; name: string; username: string; role: "OWNER" | "SUPERVISOR" | "CASHIER";
-  outletId: string; active: boolean; updatedAt: string;
+  outletId: string; active: boolean; passwordHash?: string; passwordSalt?: string; updatedAt: string;
 };
 export type AuditLogRecord = {
   id: string; userId: string; action: string; entity: string; entityId: string; detail: string; createdAt: string;
