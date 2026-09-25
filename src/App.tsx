@@ -85,7 +85,7 @@ export default function App(){
   const [receiptSale,setReceiptSale]=useState<SaleRecord|null>(null);
 
   const [productForm,setProductForm]=useState({id:"",sku:"",name:"",size:"" as ""|"S"|"M"|"L",category:"Macaroni" as Exclude<Category,"Semua">,price:"",stock:"",trackStock:false});
-  const [ingredientForm,setIngredientForm]=useState({id:"",sku:"",name:"",category:"Bahan utama",unit:"g",stock:"",minStock:"",costPerUnit:"",includeInHpp:true,priceMode:"RO" as "RO"|"MARKET"|"MANUAL",packageSize:""});
+  const [ingredientForm,setIngredientForm]=useState({id:"",sku:"",name:"",category:"Bahan utama",unit:"g",stock:"",minStock:"",costPerUnit:"",includeInHpp:true,priceMode:"RO" as "RO"|"MARKET"|"MANUAL",packageSize:"",purchasePrice:"",yieldMultiplier:"1"});
   const [recipeForm,setRecipeForm]=useState({productId:"",ingredientId:"",qty:""});
   const [purchaseForm,setPurchaseForm]=useState({ingredientId:"",supplierId:"",quantity:"",totalCost:""});
   const [stockForm,setStockForm]=useState({ingredientId:"",type:"IN" as "IN"|"OUT"|"ADJUSTMENT",quantity:"",reason:""});
@@ -120,7 +120,7 @@ export default function App(){
     return r ? r.items.reduce((sum,line) => {
     const ingredient = ingredients.find(i => i.id === line.ingredientId);
     if (!ingredient || ingredient.includeInHpp === false) return sum;
-    return sum + (ingredient.costPerUnit ?? 0) * line.quantity;
+    return sum + (Number(ingredient.costPerUnit) || 0) * (Number(line.quantity) || 0);
   }, 0) : 0;
   };
   const todaySales=sales.filter(s=>s.createdAt.startsWith(today()));
@@ -254,6 +254,8 @@ export default function App(){
       category: ingredient.category,
       unit: ingredient.unit,
       packageSize: ingredient.packageSize ?? "",
+      purchasePrice: String(ingredient.purchasePrice ?? ""),
+      yieldMultiplier: String(ingredient.yieldMultiplier ?? 1),
       stock: String(ingredient.stock ?? ""),
       minStock: String(ingredient.minStock ?? ""),
       costPerUnit: String(ingredient.costPerUnit ?? ""),
@@ -264,12 +266,12 @@ export default function App(){
   }
 
   function resetIngredientForm(){
-    setIngredientForm({id:"",sku:"",name:"",category:"Bahan utama",unit:"g",stock:"",minStock:"",costPerUnit:"",includeInHpp:true,priceMode:"RO",packageSize:""});
+    setIngredientForm({id:"",sku:"",name:"",category:"Bahan utama",unit:"g",stock:"",minStock:"",costPerUnit:"",includeInHpp:true,priceMode:"RO",packageSize:"",purchasePrice:"",yieldMultiplier:"1"});
   }
 
   async function saveIngredient(){
     if(!ingredientForm.name)return;
-    const record:IngredientRecord={id:ingredientForm.id||crypto.randomUUID(),sku:ingredientForm.sku||"ING-"+Date.now().toString().slice(-6),name:ingredientForm.name,category:ingredientForm.category,unit:ingredientForm.unit,stock:Number(ingredientForm.stock)||0,minStock:Number(ingredientForm.minStock)||0,costPerUnit:Number(ingredientForm.costPerUnit)||0,includeInHpp:ingredientForm.includeInHpp,priceMode:ingredientForm.priceMode,packageSize:ingredientForm.packageSize,updatedAt:new Date().toISOString()};
+    const record:IngredientRecord={id:ingredientForm.id||crypto.randomUUID(),sku:ingredientForm.sku||"ING-"+Date.now().toString().slice(-6),name:ingredientForm.name,category:ingredientForm.category,unit:ingredientForm.unit,stock:Number(ingredientForm.stock)||0,minStock:Number(ingredientForm.minStock)||0,costPerUnit:Number(ingredientForm.costPerUnit)||0,includeInHpp:ingredientForm.includeInHpp,priceMode:ingredientForm.priceMode,packageSize:ingredientForm.packageSize,purchasePrice:Number(ingredientForm.purchasePrice)||0,yieldMultiplier:Number(ingredientForm.yieldMultiplier)||1,updatedAt:new Date().toISOString()};
     await db.ingredients.put(record);await refresh();setIngredientForm({id:"",sku:"",name:"",category:"Bahan utama",unit:"g",stock:"",minStock:"",costPerUnit:"",includeInHpp:true,priceMode:"RO",packageSize:""});setNotice("Bahan baku tersimpan.");
   }
   async function addRecipeItem(){
@@ -608,7 +610,7 @@ function Ingredients({
               <button className="table-row-main" type="button" onClick={()=>onEdit(i)}>
                 <div>
                   <strong>{i.name}</strong>
-                  <small>{i.sku} · {i.packageSize || "Kemasan belum diatur"}</small>
+                  <small>{i.sku} · {i.packageSize || "Kemasan belum diatur"} · Beli {rupiah(i.purchasePrice ?? 0)}</small>
                 </div>
                 <div className={i.stock<=i.minStock?"danger-text":""}>
                   <strong>{rupiah(i.costPerUnit)} / {i.unit}</strong>
