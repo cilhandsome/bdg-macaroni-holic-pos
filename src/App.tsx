@@ -601,7 +601,7 @@ export default function App(){
     await refresh();setClosingCash("");setNotice("Shift ditutup.");
   }
   async function backup(){
-    const data={products:await db.products.toArray(),ingredients:await db.ingredients.toArray(),recipes:await db.recipes.toArray(),suppliers:await db.suppliers.toArray(),purchases:await db.purchases.toArray(),stockMovements:await db.stockMovements.toArray(),sales:await db.sales.toArray(),shifts:await db.shifts.toArray(),expenses:await db.expenses.toArray(),outlets:await db.outlets.toArray(),users:await db.users.toArray(),auditLogs:await db.auditLogs.toArray(),settings:await db.settings.toArray()};
+    const data={products:await db.products.toArray(),ingredients:await db.ingredients.toArray(),recipes:await db.recipes.toArray(),suppliers:await db.suppliers.toArray(),purchases:await db.purchases.toArray(),stockMovements:await db.stockMovements.toArray(),sales:await db.sales.toArray(),shifts:await db.shifts.toArray(),expenses:await db.expenses.toArray(),outlets:await db.outlets.toArray(),users:await db.users.toArray(),promos:await db.promos.toArray(),auditLogs:await db.auditLogs.toArray(),settings:await db.settings.toArray()};
     downloadJson("macaroni-holic-backup-"+today()+".json",data);setNotice("Backup dibuat.");
   }
   async function restore(file:File){
@@ -609,7 +609,7 @@ export default function App(){
       const p=JSON.parse(await file.text()) as Record<string,unknown[]>;
       await Promise.all([
         db.products.clear(),db.ingredients.clear(),db.recipes.clear(),db.suppliers.clear(),db.purchases.clear(),db.stockMovements.clear(),
-        db.sales.clear(),db.shifts.clear(),db.expenses.clear(),db.outlets.clear(),db.users.clear(),db.auditLogs.clear(),db.settings.clear()
+        db.sales.clear(),db.shifts.clear(),db.expenses.clear(),db.outlets.clear(),db.users.clear(),db.promos.clear(),db.auditLogs.clear(),db.settings.clear()
       ]);
       if(p.products)await db.products.bulkAdd(p.products as ProductRecord[]);
       if(p.ingredients)await db.ingredients.bulkAdd(p.ingredients as IngredientRecord[]);
@@ -622,6 +622,7 @@ export default function App(){
       if(p.expenses)await db.expenses.bulkAdd(p.expenses as ExpenseRecord[]);
       if(p.outlets)await db.outlets.bulkAdd(p.outlets as OutletRecord[]);
       if(p.users)await db.users.bulkAdd(p.users as UserRecord[]);
+      if(p.promos)await db.promos.bulkAdd(p.promos as PromoRecord[]);
       if(p.auditLogs)await db.auditLogs.bulkAdd(p.auditLogs as any[]);
       if(p.settings)await db.settings.bulkAdd(p.settings as any[]);
       await refresh();setNotice("Backup dipulihkan.");
