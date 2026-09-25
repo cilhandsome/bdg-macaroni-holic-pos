@@ -44,6 +44,7 @@ export type SaleRecord = {
   id: string; invoiceNo: string; orderType: "Take Away" | "Dine In"; tableNumber: string;
   paymentMethod: string; subtotal: number; discount: number; total: number; cashReceived: number;
   change: number; costOfGoods: number;
+  promoId?: string; promoCode?: string; promoName?: string;
   items: Array<{ productId: string; name: string; price: number; qty: number; cost: number }>;
   createdAt: string; outletId: string; userId: string; synced: boolean;
 };
