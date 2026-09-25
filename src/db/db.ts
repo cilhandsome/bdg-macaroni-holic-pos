@@ -2,7 +2,7 @@ import Dexie, { type Table } from "dexie";
 
 export type Category = "Macaroni" | "Snack" | "Drink" | "Topping";
 export type ProductRecord = {
-  id: string; sku: string; name: string; category: Category; price: number; stock: number;
+  id: string; sku: string; name: string; category: Category; price: number; stock: number; productCost?: number;
   emoji: string; active: boolean; trackStock: boolean; size?: "S" | "M" | "L"; updatedAt: string;
 };
 export type IngredientRecord = {
