@@ -343,7 +343,13 @@ export default function App(){
 
   async function checkout(){
     if(!context||!cart.length)return;
-    if(paymentMethod==="Cash"&&received<total){setError("Nominal pembayaran belum mencukupi.");return;}
+    const activePromo=selectedPromo;
+    const activePromoCalc=activePromo ? calculatePromoDiscount(activePromo,cart,cartSubtotal,context.outlet.id) : {eligible:true,discount:0,base:0};
+    if(activePromo && !activePromoCalc.eligible){setError(activePromoCalc.reason||"Promo tidak lagi memenuhi syarat.");return;}
+    const finalDiscount=activePromoCalc.discount||0;
+    const finalTotal=Math.max(cartSubtotal-finalDiscount,0);
+    const finalChange=Math.max(received-finalTotal,0);
+    if(paymentMethod==="Cash"&&received<finalTotal){setError("Nominal pembayaran belum mencukupi.");return;}
     const invoice="MH-"+today().replaceAll("-","")+"-"+String(Date.now()).slice(-5); const createdAt=new Date().toISOString();
     try{
       let created:SaleRecord|null=null;
@@ -402,10 +408,13 @@ export default function App(){
         tableNumber: orderType === "Dine In" ? tableNumber : "",
         paymentMethod,
         subtotal: cartSubtotal,
-        discount: 0,
-        total,
-        cashReceived: paymentMethod === "Cash" ? received : total,
-        change: paymentMethod === "Cash" ? change : 0,
+        discount: finalDiscount,
+        total: finalTotal,
+        cashReceived: paymentMethod === "Cash" ? received : finalTotal,
+        change: paymentMethod === "Cash" ? finalChange : 0,
+        promoId: activePromo?.id,
+        promoCode: activePromo?.code,
+        promoName: activePromo?.name,
         costOfGoods: cogs,
         items: cart.map(i => ({
           productId: i.id,
@@ -421,7 +430,13 @@ export default function App(){
       };
       await db.sales.add(created);
       await db.syncQueue.add({id:crypto.randomUUID(),tableName:"sales",recordId:created.id,createdAt,attempts:0,synced:false});
-      await refresh(); setReceiptSale(null); setCart([]); setCashReceived(""); setTableNumber(""); setPaymentOpen(false); setView("history"); setNotice(invoice+" tersimpan di perangkat.");
+      if(activePromo){
+        const usedPromo={...activePromo,usedCount:(activePromo.usedCount||0)+1,updatedAt:createdAt};
+        await db.promos.put(usedPromo);
+        await db.auditLogs.add({id:crypto.randomUUID(),userId:context.user.id,action:"UPSERT",entity:"PROMO",entityId:usedPromo.id,detail:JSON.stringify(usedPromo),createdAt});
+        await db.auditLogs.add({id:crypto.randomUUID(),userId:context.user.id,action:"UPSERT",entity:"SALE_PROMO",entityId:created.id,detail:JSON.stringify({saleId:created.id,promoId:activePromo.id,promoCode:activePromo.code,promoName:activePromo.name}),createdAt});
+      }
+      await refresh(); setReceiptSale(null); setCart([]); setSelectedPromoId(""); setCashReceived(""); setTableNumber(""); setPaymentOpen(false); setPromoOpen(false); setView("history"); setNotice(invoice+" tersimpan di perangkat.");
     }catch(e){setError(e instanceof Error?e.message:"Transaksi gagal.");}
   }
 
