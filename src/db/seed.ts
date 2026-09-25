@@ -24,16 +24,18 @@ const products: ProductRecord[] = [
   { id:"mc-bol-chicken-crispy-l",sku:"MH-MC-004-L",name:"Macaroni Cheese Bolognese Chicken Crispy L",category:"Macaroni",price:20000,stock:0,emoji:"🍝",active:true,trackStock:false,size:"L",updatedAt:now() }
 ];
 const ingredients: IngredientRecord[] = [
-  { id:"ing-macaroni",sku:"ING-001",name:"Macaroni Special Khas KKI",category:"Bahan utama",unit:"g",packageSize:"800 gr",stock:0,minStock:0,costPerUnit:26.25,includeInHpp:true,priceMode:"RO",updatedAt:now() },
-  { id:"ing-topping-crispy",sku:"ING-002",name:"Tepung Crispy Istimewa",category:"Pelapis",unit:"g",packageSize:"800 gr",stock:0,minStock:0,costPerUnit:21.25,includeInHpp:true,priceMode:"RO",updatedAt:now() },
-  { id:"ing-sauce-bolognese",sku:"ING-003",name:"Saus Bolognese Special KKI",category:"Saus",unit:"g",packageSize:"500 gr",stock:0,minStock:0,costPerUnit:50,includeInHpp:true,priceMode:"RO",updatedAt:now() },
-  { id:"ing-cheese",sku:"ING-004",name:"Bubuk Keju Super Khas KKI",category:"Saus",unit:"g",packageSize:"200 gr",stock:0,minStock:0,costPerUnit:140,includeInHpp:true,priceMode:"RO",updatedAt:now() },
-  { id:"ing-chili",sku:"ING-005",name:"Saus Chili",category:"Saus",unit:"ml",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:35,includeInHpp:true,priceMode:"RO",updatedAt:now() },
-  { id:"ing-mayo",sku:"ING-006",name:"Mayonaise",category:"Saus",unit:"ml",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:30,includeInHpp:true,priceMode:"RO",updatedAt:now() },
-  { id:"ing-chicken-fillet",sku:"ING-007",name:"Ayam Fillet",category:"Protein",unit:"g",packageSize:"1 kg",stock:0,minStock:0,costPerUnit:58,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
-  { id:"ing-oil",sku:"ING-008",name:"Minyak Goreng",category:"Bahan utama",unit:"ml",packageSize:"1 L",stock:0,minStock:0,costPerUnit:22.6,includeInHpp:false,priceMode:"MARKET",updatedAt:now() },
-  { id:"ing-parsley",sku:"ING-009",name:"Parsley",category:"Topping",unit:"g",packageSize:"",stock:0,minStock:0,costPerUnit:0,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
-  { id:"ing-packaging",sku:"ING-010",name:"Packaging",category:"Packaging",unit:"pcs",packageSize:"1 pcs",stock:0,minStock:0,costPerUnit:0,includeInHpp:true,priceMode:"MARKET",updatedAt:now() }
+  { id:"ing-macaroni",sku:"ING-001",name:"Macaroni Special Khas KKI",category:"Bahan utama",unit:"g",packageSize:"800 gr",purchasePrice:21000,yieldMultiplier:2,stock:0,minStock:0,costPerUnit:12.35,includeInHpp:true,priceMode:"RO",updatedAt:now() },
+  { id:"ing-topping-crispy",sku:"ING-002",name:"Tepung Crispy Istimewa",category:"Pelapis",unit:"g",packageSize:"800 gr",purchasePrice:17000,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:17,includeInHpp:true,priceMode:"RO",updatedAt:now() },
+  { id:"ing-sauce-bolognese",sku:"ING-003",name:"Saus Bolognese Special KKI",category:"Saus",unit:"g",packageSize:"500 gr",purchasePrice:25000,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:50,includeInHpp:true,priceMode:"RO",updatedAt:now() },
+  { id:"ing-cheese",sku:"ING-004",name:"Bubuk Keju Super Khas KKI",category:"Saus",unit:"ml",packageSize:"200 gr",purchasePrice:28000,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:40,includeInHpp:true,priceMode:"RO",updatedAt:now() },
+  { id:"ing-chili",sku:"ING-005",name:"Saus Chili",category:"Saus",unit:"ml",packageSize:"1 kg",purchasePrice:35000,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:0,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
+  { id:"ing-mayo",sku:"ING-006",name:"Mayonaise",category:"Saus",unit:"ml",packageSize:"1 kg",purchasePrice:30000,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:0,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
+  { id:"ing-chicken-fillet",sku:"ING-007",name:"Ayam Fillet",category:"Protein",unit:"g",packageSize:"1 kg",purchasePrice:58000,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:58,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
+  { id:"ing-oil",sku:"ING-008",name:"Minyak Goreng",category:"Bahan utama",unit:"ml",packageSize:"1 L",purchasePrice:22600,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:22.6,includeInHpp:false,priceMode:"MARKET",updatedAt:now() },
+  { id:"ing-parsley",sku:"ING-009",name:"Parsley",category:"Topping",unit:"g",packageSize:"",purchasePrice:180,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:180,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
+  { id:"ing-packaging-s",sku:"ING-010-S",name:"Packaging S",category:"Packaging",unit:"pcs",packageSize:"1 pcs",purchasePrice:0,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:0,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
+  { id:"ing-packaging-m",sku:"ING-010-M",name:"Packaging M",category:"Packaging",unit:"pcs",packageSize:"1 pcs",purchasePrice:1250,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:1250,includeInHpp:true,priceMode:"MARKET",updatedAt:now() },
+  { id:"ing-packaging-l",sku:"ING-010-L",name:"Packaging L",category:"Packaging",unit:"pcs",packageSize:"1 pcs",purchasePrice:1350,yieldMultiplier:1,stock:0,minStock:0,costPerUnit:1350,includeInHpp:true,priceMode:"MARKET",updatedAt:now() }
 ];
 const recipes: RecipeRecord[] = [
   { id:"recipe-mc-cheese-s",productId:"mc-cheese-s",items:[
@@ -43,7 +45,7 @@ const recipes: RecipeRecord[] = [
     {ingredientId:"ing-mayo",quantity:5,unit:"ml",estimated:true},
     {ingredientId:"ing-oil",quantity:2,unit:"ml",estimated:true},
     {ingredientId:"ing-parsley",quantity:1,unit:"g"},
-    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+    {ingredientId:"ing-packaging-s",quantity:1,unit:"pcs"}
   ],updatedAt:now() },
   { id:"recipe-mc-cheese-m",productId:"mc-cheese-m",items:[
     {ingredientId:"ing-macaroni",quantity:120,unit:"g"},
@@ -52,7 +54,7 @@ const recipes: RecipeRecord[] = [
     {ingredientId:"ing-mayo",quantity:10,unit:"ml"},
     {ingredientId:"ing-oil",quantity:3,unit:"ml"},
     {ingredientId:"ing-parsley",quantity:1,unit:"g"},
-    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+    {ingredientId:"ing-packaging-m",quantity:1,unit:"pcs"}
   ],updatedAt:now() },
   { id:"recipe-mc-cheese-l",productId:"mc-cheese-l",items:[
     {ingredientId:"ing-macaroni",quantity:160,unit:"g"},
@@ -61,7 +63,7 @@ const recipes: RecipeRecord[] = [
     {ingredientId:"ing-mayo",quantity:20,unit:"ml"},
     {ingredientId:"ing-oil",quantity:5,unit:"ml"},
     {ingredientId:"ing-parsley",quantity:1,unit:"g"},
-    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+    {ingredientId:"ing-packaging-l",quantity:1,unit:"pcs"}
   ],updatedAt:now() },
 
   { id:"recipe-mc-bolognese-s",productId:"mc-bolognese-s",items:[
@@ -72,7 +74,7 @@ const recipes: RecipeRecord[] = [
     {ingredientId:"ing-mayo",quantity:5,unit:"ml",estimated:true},
     {ingredientId:"ing-oil",quantity:2,unit:"ml",estimated:true},
     {ingredientId:"ing-parsley",quantity:1,unit:"g"},
-    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+    {ingredientId:"ing-packaging-s",quantity:1,unit:"pcs"}
   ],updatedAt:now() },
   { id:"recipe-mc-bolognese-m",productId:"mc-bolognese-m",items:[
     {ingredientId:"ing-macaroni",quantity:120,unit:"g"},
@@ -82,7 +84,7 @@ const recipes: RecipeRecord[] = [
     {ingredientId:"ing-mayo",quantity:10,unit:"ml"},
     {ingredientId:"ing-oil",quantity:3,unit:"ml"},
     {ingredientId:"ing-parsley",quantity:1,unit:"g"},
-    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+    {ingredientId:"ing-packaging-m",quantity:1,unit:"pcs"}
   ],updatedAt:now() },
   { id:"recipe-mc-bolognese-l",productId:"mc-bolognese-l",items:[
     {ingredientId:"ing-macaroni",quantity:160,unit:"g"},
@@ -92,7 +94,7 @@ const recipes: RecipeRecord[] = [
     {ingredientId:"ing-mayo",quantity:20,unit:"ml"},
     {ingredientId:"ing-oil",quantity:5,unit:"ml"},
     {ingredientId:"ing-parsley",quantity:1,unit:"g"},
-    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+    {ingredientId:"ing-packaging-l",quantity:1,unit:"pcs"}
   ],updatedAt:now() },
 
   { id:"recipe-mc-chicken-crispy-s",productId:"mc-chicken-crispy-s",items:[
@@ -104,7 +106,7 @@ const recipes: RecipeRecord[] = [
     {ingredientId:"ing-chicken-fillet",quantity:25,unit:"g",estimated:true},
     {ingredientId:"ing-topping-crispy",quantity:25,unit:"g",estimated:true},
     {ingredientId:"ing-parsley",quantity:1,unit:"g"},
-    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+    {ingredientId:"ing-packaging-s",quantity:1,unit:"pcs"}
   ],updatedAt:now() },
   { id:"recipe-mc-chicken-crispy-m",productId:"mc-chicken-crispy-m",items:[
     {ingredientId:"ing-macaroni",quantity:120,unit:"g"},
@@ -115,7 +117,7 @@ const recipes: RecipeRecord[] = [
     {ingredientId:"ing-chicken-fillet",quantity:50,unit:"g"},
     {ingredientId:"ing-topping-crispy",quantity:50,unit:"g"},
     {ingredientId:"ing-parsley",quantity:1,unit:"g"},
-    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+    {ingredientId:"ing-packaging-m",quantity:1,unit:"pcs"}
   ],updatedAt:now() },
   { id:"recipe-mc-chicken-crispy-l",productId:"mc-chicken-crispy-l",items:[
     {ingredientId:"ing-macaroni",quantity:160,unit:"g"},
@@ -126,7 +128,7 @@ const recipes: RecipeRecord[] = [
     {ingredientId:"ing-chicken-fillet",quantity:50,unit:"g"},
     {ingredientId:"ing-topping-crispy",quantity:50,unit:"g"},
     {ingredientId:"ing-parsley",quantity:1,unit:"g"},
-    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+    {ingredientId:"ing-packaging-l",quantity:1,unit:"pcs"}
   ],updatedAt:now() },
 
   { id:"recipe-mc-bol-chicken-crispy-s",productId:"mc-bol-chicken-crispy-s",items:[
@@ -139,7 +141,7 @@ const recipes: RecipeRecord[] = [
     {ingredientId:"ing-chicken-fillet",quantity:25,unit:"g",estimated:true},
     {ingredientId:"ing-topping-crispy",quantity:25,unit:"g",estimated:true},
     {ingredientId:"ing-parsley",quantity:1,unit:"g"},
-    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+    {ingredientId:"ing-packaging-s",quantity:1,unit:"pcs"}
   ],updatedAt:now() },
   { id:"recipe-mc-bol-chicken-crispy-m",productId:"mc-bol-chicken-crispy-m",items:[
     {ingredientId:"ing-macaroni",quantity:120,unit:"g"},
@@ -151,7 +153,7 @@ const recipes: RecipeRecord[] = [
     {ingredientId:"ing-chicken-fillet",quantity:50,unit:"g"},
     {ingredientId:"ing-topping-crispy",quantity:50,unit:"g"},
     {ingredientId:"ing-parsley",quantity:1,unit:"g"},
-    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+    {ingredientId:"ing-packaging-m",quantity:1,unit:"pcs"}
   ],updatedAt:now() },
   { id:"recipe-mc-bol-chicken-crispy-l",productId:"mc-bol-chicken-crispy-l",items:[
     {ingredientId:"ing-macaroni",quantity:160,unit:"g"},
@@ -163,7 +165,7 @@ const recipes: RecipeRecord[] = [
     {ingredientId:"ing-chicken-fillet",quantity:50,unit:"g"},
     {ingredientId:"ing-topping-crispy",quantity:50,unit:"g"},
     {ingredientId:"ing-parsley",quantity:1,unit:"g"},
-    {ingredientId:"ing-packaging",quantity:1,unit:"pcs"}
+    {ingredientId:"ing-packaging-l",quantity:1,unit:"pcs"}
   ],updatedAt:now() }
 ];
 export async function seedDatabase(){
@@ -216,7 +218,7 @@ export async function seedDatabase(){
     if (!existing) await db.ingredients.add(ingredient);
     else await db.ingredients.update(ingredient.id, {
       name: ingredient.name, sku: ingredient.sku, category: ingredient.category, unit: ingredient.unit,
-      packageSize: ingredient.packageSize, costPerUnit: ingredient.costPerUnit,
+      packageSize: ingredient.packageSize, purchasePrice: ingredient.purchasePrice, yieldMultiplier: ingredient.yieldMultiplier, costPerUnit: ingredient.costPerUnit,
       includeInHpp: ingredient.includeInHpp, priceMode: ingredient.priceMode, updatedAt: now()
     });
   }
