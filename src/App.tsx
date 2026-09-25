@@ -106,9 +106,36 @@ export default function App(){
 
   useEffect(()=>{void(async()=>{try{await seedDatabase();await refresh();}catch(e){setError(e instanceof Error?e.message:"Aplikasi gagal dimuat.");}finally{setLoading(false);}})();},[]);
 
-  const filteredProducts=useMemo(()=>products.filter(p=>
-    (category==="Semua"||p.category===category) && (p.name+" "+p.sku).toLowerCase().includes(query.toLowerCase())
-  ),[products,category,query]);
+  const filteredProducts=useMemo(()=>{
+    const familyOrder=[
+      "Macaroni Cheese",
+      "Macaroni Cheese Chicken Crispy",
+      "Macaroni Cheese Bolognese",
+      "Macaroni Cheese Bolognese Chicken Crispy",
+    ];
+    const sizeOrder={S:0,M:1,L:2};
+    const familyOf=(name:string)=>{
+      const clean=name.replace(/\\s+[SML]$/,"").trim();
+      return clean;
+    };
+    return products
+      .filter(p=>
+        (category==="Semua"||p.category===category) &&
+        (p.name+" "+p.sku).toLowerCase().includes(query.toLowerCase())
+      )
+      .sort((a,b)=>{
+        const af=familyOf(a.name);
+        const bf=familyOf(b.name);
+        const ai=familyOrder.indexOf(af);
+        const bi=familyOrder.indexOf(bf);
+        const familyCompare=(ai===-1?999:ai)-(bi===-1?999:bi);
+        if(familyCompare!==0) return familyCompare;
+        const as=(a.size ? sizeOrder[a.size] : 99);
+        const bs=(b.size ? sizeOrder[b.size] : 99);
+        if(as!==bs) return as-bs;
+        return a.name.localeCompare(b.name,"id");
+      });
+  },[products,category,query]);
 
   const availableCategories = useMemo<Category[]>(() => {
     const present = new Set(products.map((p) => p.category));
