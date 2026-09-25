@@ -1174,6 +1174,8 @@ function Reports({sales,expenses,products,onRecalculateHpp}:{sales:SaleRecord[];
   const filteredExpenses=expenses.filter(e=>inRange(e.createdAt));
 
   const revenue=filteredSales.reduce((n,s)=>n+(Number(s.total)||0),0);
+  const grossRevenue=filteredSales.reduce((n,s)=>n+(Number(s.subtotal)||0),0);
+  const discountTotal=filteredSales.reduce((n,s)=>n+(Number(s.discount)||0),0);
   const cogs=filteredSales.reduce((n,s)=>n+(Number(s.costOfGoods)||0),0);
   const expense=filteredExpenses.reduce((n,e)=>n+(Number(e.amount)||0),0);
   const grossProfit=revenue-cogs;
@@ -1199,13 +1201,25 @@ function Reports({sales,expenses,products,onRecalculateHpp}:{sales:SaleRecord[];
     }
   }
   const productRows=[...productMap.values()].sort((a,b)=>b.revenue-a.revenue);
+  const promoMap=new Map<string,{name:string;count:number;discount:number}>();
+  for(const sale of filteredSales){
+    if(!sale.promoCode) continue;
+    const key=sale.promoCode;
+    const current=promoMap.get(key)||{name:sale.promoName||key,count:0,discount:0};
+    current.count+=1;
+    current.discount+=Number(sale.discount)||0;
+    promoMap.set(key,current);
+  }
+  const promoRows=[...promoMap.entries()].map(([code,row])=>({code,...row})).sort((a,b)=>b.discount-a.discount);
 
   const exportReport=()=>{
     const rows=[
       ["Periode",from+" s/d "+to],
       [],
       ["Ringkasan","Nilai"],
-      ["Omzet",revenue],
+      ["Omzet Kotor",grossRevenue],
+      ["Diskon Promo",discountTotal],
+      ["Omzet Bersih",revenue],
       ["HPP",cogs],
       ["Laba Kotor",grossProfit],
       ["Expense",expense],
@@ -1244,7 +1258,9 @@ function Reports({sales,expenses,products,onRecalculateHpp}:{sales:SaleRecord[];
     {incompleteHpp>0&&<div className="report-warning"><strong>Catatan HPP:</strong> {incompleteHpp} transaksi pada periode ini belum memiliki HPP tercatat. HPP dan laba untuk transaksi tersebut belum dapat dianggap final.</div>}
 
     <div className="kpi-grid">
-      <Kpi title="Omzet" value={rupiah(revenue)} meta={filteredSales.length+" transaksi"}/>
+      <Kpi title="Omzet Kotor" value={rupiah(grossRevenue)} meta="Sebelum diskon"/>
+      <Kpi title="Diskon Promo" value={rupiah(discountTotal)} meta={promoRows.length+" promo digunakan"}/>
+      <Kpi title="Omzet Bersih" value={rupiah(revenue)} meta={filteredSales.length+" transaksi"}/>
       <Kpi title="HPP" value={rupiah(cogs)} meta="COGS tercatat"/>
       <Kpi title="Laba Kotor" value={rupiah(grossProfit)} meta={grossMargin.toFixed(1)+"% gross margin"}/>
       <Kpi title="Laba Bersih" value={rupiah(netProfit)} meta={rupiah(expense)+" expense"}/>
@@ -1262,6 +1278,11 @@ function Reports({sales,expenses,products,onRecalculateHpp}:{sales:SaleRecord[];
         </div>
       </Panel>
 
+      <Panel title="Promo Digunakan">
+        <div className="simple-table">
+          {promoRows.length?promoRows.map(r=><div className="table-row" key={r.code}><div><strong>{r.code}</strong><small>{r.name} · {r.count} transaksi</small></div><strong>{rupiah(r.discount)}</strong></div>):<Empty text="Belum ada promo digunakan pada periode ini."/>}
+        </div>
+      </Panel>
       <Panel title="Produk Terjual">
         <div className="report-table">
           <div className="report-row report-head"><span>Produk</span><span>Qty</span><span>Omzet</span><span>Laba</span></div>
