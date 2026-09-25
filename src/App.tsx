@@ -917,6 +917,55 @@ function Products({
   </section>;
 }
 
+function Promos({promos,products,form,setForm,onSave,onReset,onEdit,onToggle}:{promos:PromoRecord[];products:ProductRecord[];form:any;setForm:(v:any)=>void;onSave:()=>void;onReset:()=>void;onEdit:(p:PromoRecord)=>void;onToggle:(p:PromoRecord)=>void}){
+  const editing=Boolean(form.id);
+  return <section className="page-section">
+    <div className="products-toolbar">
+      <div><div className="page-kicker">Marketing</div><h2>Promo & Diskon</h2><p>Buat promo terkontrol untuk kasir. Promo aktif hanya bisa dipakai ketika syaratnya terpenuhi.</p></div>
+      <button className="primary-button toolbar-button" type="button" onClick={onReset}>＋ Promo Baru</button>
+    </div>
+    <div className="content-grid">
+      <Panel title={editing?"Edit Promo":"Buat Promo"}>
+        <div className="form-grid">
+          <Field label="Kode promo" value={form.code} onChange={v=>setForm({...form,code:v})}/>
+          <Field label="Nama promo" value={form.name} onChange={v=>setForm({...form,name:v})}/>
+          <label className="field">Jenis
+            <select value={form.type} onChange={e=>setForm({...form,type:e.target.value})}>
+              <option value="PERCENT">Persentase (%)</option>
+              <option value="NOMINAL">Nominal (Rp)</option>
+            </select>
+          </label>
+          <Field label={form.type==="PERCENT"?"Nilai diskon (%)":"Nilai diskon (Rp)"} type="number" value={form.value} onChange={v=>setForm({...form,value:v})}/>
+          <Field label="Minimum transaksi (Rp)" type="number" value={form.minSubtotal} onChange={v=>setForm({...form,minSubtotal:v})}/>
+          <Field label="Maksimum diskon (Rp, opsional)" type="number" value={form.maxDiscount} onChange={v=>setForm({...form,maxDiscount:v})}/>
+          <label className="field">Berlaku untuk
+            <select value={form.productId} onChange={e=>setForm({...form,productId:e.target.value})}>
+              <option value="">Semua menu</option>
+              {products.filter(p=>p.active).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </label>
+          <Field label="Maks. pemakaian (0 = tanpa batas)" type="number" value={form.maxUses} onChange={v=>setForm({...form,maxUses:v})}/>
+          <label className="field">Mulai<input type="date" value={form.startDate} onChange={e=>setForm({...form,startDate:e.target.value})}/></label>
+          <label className="field">Berakhir<input type="date" value={form.endDate} onChange={e=>setForm({...form,endDate:e.target.value})}/></label>
+        </div>
+        <label className="checkbox-field"><input type="checkbox" checked={form.active} onChange={e=>setForm({...form,active:e.target.checked})}/><span>Promo aktif setelah disimpan</span></label>
+        <div className="menu-model-note">{form.type==="PERCENT"?"Potongan "+(form.value||0)+"%":"Potongan tetap "+rupiah(Number(form.value)||0)}{Number(form.maxDiscount)>0?" maksimal "+rupiah(Number(form.maxDiscount)):""}. Minimum transaksi {rupiah(Number(form.minSubtotal)||0)}.</div>
+        <div className="form-actions"><button className="primary-button" onClick={onSave}>{editing?"Simpan Perubahan":"Simpan Promo"}</button>{editing&&<button className="secondary-button" onClick={onReset}>Batal</button>}</div>
+      </Panel>
+      <Panel title={"Daftar Promo ("+promos.length+")"}>
+        <div className="simple-table">
+          {promos.length?promos.slice().sort((a,b)=>Number(b.active)-Number(a.active)||b.updatedAt.localeCompare(a.updatedAt)).map(p=><div className="table-row" key={p.id}>
+            <button className="table-row-main" type="button" onClick={()=>onEdit(p)}>
+              <div><strong>{p.code} · {p.name}</strong><small>{promoRuleLabel(p)} · {p.startDate} s/d {p.endDate}</small></div>
+              <div><strong>{p.usedCount}{p.maxUses?"/"+p.maxUses:""}x</strong><small>{p.active?"Aktif":"Nonaktif"}</small></div>
+            </button>
+            <button className={p.active?"edit-row-button":"secondary-button"} type="button" onClick={()=>onToggle(p)}>{p.active?"Nonaktifkan":"Aktifkan"}</button>
+          </div>):<Empty text="Belum ada promo. Buat promo pertama di panel sebelah kiri."/>}
+        </div>
+      </Panel>
+    </div>
+  </section>;
+}
 function Ingredients({
   ingredients,lowStock,form,setForm,onSave,onEdit,onReset
 }:{
