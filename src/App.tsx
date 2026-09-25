@@ -1310,6 +1310,8 @@ function Receipt({sale,onClose}:{sale:SaleRecord;onClose:()=>void}){
           <strong>{rupiah((Number(i.qty)||0)*(Number(i.price)||0))}</strong>
         </div>)}
         <div className="receipt-divider"/>
+        <div className="receipt-meta"><span>Subtotal</span><strong>{rupiah(Number(sale.subtotal)||0)}</strong></div>
+        {(Number(sale.discount)||0)>0&&<div className="receipt-meta"><span>Diskon{sale.promoCode?" · "+sale.promoCode:""}</span><strong>-{rupiah(Number(sale.discount)||0)}</strong></div>}
         <div className="receipt-total"><span>Total</span><strong>{rupiah(Number(sale.total)||0)}</strong></div>
         <div className="receipt-meta"><span>Bayar</span><strong>{sale.paymentMethod || "—"}</strong></div>
         {sale.paymentMethod==="Cash"&&<div className="receipt-meta"><span>Kembali</span><strong>{rupiah(Number(sale.change)||0)}</strong></div>}
