@@ -3,21 +3,22 @@ import {
   db,
   type ProductRecord, type IngredientRecord, type RecipeRecord, type SaleRecord,
   type PurchaseRecord, type ExpenseRecord, type ShiftRecord, type SupplierRecord,
-  type OutletRecord, type UserRecord, type StockMovementRecord
+  type OutletRecord, type UserRecord, type StockMovementRecord, type PromoRecord
 } from "./db/db";
 import { getCurrentContext, loadActiveProducts, seedDatabase } from "./db/seed";
 import { cloudSyncConfigured, syncNow } from "./services/sync";
 import { getAuthenticatedUser, loginLocal, logoutLocal } from "./services/auth";
+import { calculatePromoDiscount, promoRuleLabel } from "./services/promos";
 
-type View = "dashboard" | "pos" | "history" | "products" | "ingredients" | "recipes" | "purchases" | "stock" | "expenses" | "shift" | "reports" | "outlets" | "users" | "settings";
+type View = "dashboard" | "pos" | "history" | "products" | "ingredients" | "recipes" | "purchases" | "stock" | "expenses" | "shift" | "reports" | "promos" | "outlets" | "users" | "settings";
 type Category = "Semua" | "Macaroni" | "Snack" | "Drink" | "Topping";
 type CartItem = ProductRecord & { qty: number };
 type Role = UserRecord["role"];
 
 const roleViews: Record<Role, View[]> = {
   CASHIER: ["dashboard","pos","history","shift"],
-  SUPERVISOR: ["dashboard","pos","history","products","ingredients","recipes","purchases","stock","expenses","shift","reports"],
-  OWNER: ["dashboard","pos","history","products","ingredients","recipes","purchases","stock","expenses","shift","reports","outlets","users","settings"],
+  SUPERVISOR: ["dashboard","pos","history","products","ingredients","recipes","purchases","stock","expenses","shift","reports","promos"],
+  OWNER: ["dashboard","pos","history","products","ingredients","recipes","purchases","stock","expenses","shift","reports","promos","outlets","users","settings"],
 };
 
 function LoginScreen({onLogin}:{onLogin:(username:string,password:string)=>Promise<void>}){
@@ -128,6 +129,7 @@ export default function App(){
   const [suppliers,setSuppliers]=useState<SupplierRecord[]>([]);
   const [outlets,setOutlets]=useState<OutletRecord[]>([]);
   const [users,setUsers]=useState<UserRecord[]>([]);
+  const [promos,setPromos]=useState<PromoRecord[]>([]);
   const [context,setContext]=useState<{outlet:OutletRecord;user:UserRecord}|null>(null);
   const [authUser,setAuthUser]=useState<UserRecord|null>(null);
   const [loading,setLoading]=useState(true);
@@ -135,8 +137,8 @@ export default function App(){
 
   const [category,setCategory]=useState<Category>("Semua"); const [query,setQuery]=useState("");
   const [cart,setCart]=useState<CartItem[]>([]); const [orderType,setOrderType]=useState<"Take Away"|"Dine In">("Take Away");
-  const [tableNumber,setTableNumber]=useState(""); const [paymentOpen,setPaymentOpen]=useState(false);
-  const [paymentMethod,setPaymentMethod]=useState("Cash"); const [cashReceived,setCashReceived]=useState("");
+  const [tableNumber,setTableNumber]=useState(""); const [paymentOpen,setPaymentOpen]=useState(false); const [promoOpen,setPromoOpen]=useState(false);
+  const [paymentMethod,setPaymentMethod]=useState("Cash"); const [cashReceived,setCashReceived]=useState(""); const [selectedPromoId,setSelectedPromoId]=useState("");
   const [receiptSale,setReceiptSale]=useState<SaleRecord|null>(null);
 
   const [productForm,setProductForm]=useState({id:"",sku:"",name:"",size:"" as ""|"S"|"M"|"L",category:"Macaroni" as Exclude<Category,"Semua">,price:"",stock:"",productCost:"",trackStock:false});
@@ -147,16 +149,17 @@ export default function App(){
   const [expenseForm,setExpenseForm]=useState({category:"Operasional",description:"",amount:"",paymentMethod:"Cash"});
   const [openingCash,setOpeningCash]=useState(""); const [closingCash,setClosingCash]=useState("");
   const [selectedId,setSelectedId]=useState("");
+  const [promoForm,setPromoForm]=useState({id:"",code:"",name:"",type:"PERCENT" as "PERCENT"|"NOMINAL",value:"10",minSubtotal:"0",maxDiscount:"",startDate:today(),endDate:today(),productId:"",maxUses:"",active:true});
   const [syncing,setSyncing]=useState(false);
 
   const refresh=async()=>{
-    const [p,i,r,s,pu,e,sh,sm,su,o,u,c]=await Promise.all([
+    const [p,i,r,s,pu,e,sh,sm,su,o,u,pr,c]=await Promise.all([
       loadActiveProducts(),db.ingredients.toArray(),db.recipes.toArray(),db.sales.orderBy("createdAt").reverse().toArray(),
       db.purchases.orderBy("createdAt").reverse().toArray(),db.expenses.orderBy("createdAt").reverse().toArray(),
       db.shifts.orderBy("startedAt").reverse().toArray(),db.stockMovements.orderBy("createdAt").reverse().toArray(),
-      db.suppliers.toArray(),db.outlets.toArray(),db.users.toArray(),getCurrentContext()
+      db.suppliers.toArray(),db.outlets.toArray(),db.users.toArray(),db.promos.toArray(),getCurrentContext()
     ]);
-    setProducts(p);setIngredients(i);setRecipes(r);setSales(s);setPurchases(pu);setExpenses(e);setShifts(sh);setStockMoves(sm);setSuppliers(su);setOutlets(o);setUsers(u);setContext(c);
+    setProducts(p);setIngredients(i);setRecipes(r);setSales(s);setPurchases(pu);setExpenses(e);setShifts(sh);setStockMoves(sm);setSuppliers(su);setOutlets(o);setUsers(u);setPromos(pr);setContext(c);
   };
 
   useEffect(()=>{void(async()=>{
@@ -284,7 +287,14 @@ export default function App(){
   function changeQty(id:string,delta:number){setCart(list=>list.map(x=>x.id===id?{...x,qty:x.qty+delta}:x).filter(x=>x.qty>0));}
 
   const cartSubtotal=cart.reduce((n,x)=>n+(Number(x.price)||0)*(Number(x.qty)||0),0);
-  const total=cartSubtotal; const received=Number(cashReceived)||0; const change=Math.max(received-total,0);
+  const selectedPromo=promos.find(p=>p.id===selectedPromoId)??null;
+  const promoCalculation=selectedPromo&&context
+    ? calculatePromoDiscount(selectedPromo,cart,cartSubtotal,context.outlet.id)
+    : {eligible:false,discount:0,base:0,reason:""};
+  const promoDiscount=promoCalculation.eligible ? promoCalculation.discount : 0;
+  const total=Math.max(cartSubtotal-promoDiscount,0);
+  const received=Number(cashReceived)||0; const change=Math.max(received-total,0);
+  const availablePromos=promos.map(p=>({promo:p,calc:context?calculatePromoDiscount(p,cart,cartSubtotal,context.outlet.id):{eligible:false,discount:0,base:0}})).filter(x=>x.calc.eligible).sort((a,b)=>b.calc.discount-a.calc.discount);
 
   async function calculateSaleHpp(sale: SaleRecord){
     let cogs = 0;
