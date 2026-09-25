@@ -878,7 +878,7 @@ function Reports({sales,expenses,products}:{sales:SaleRecord[];expenses:ExpenseR
         </div>
       </Panel>
       <Panel title="Catatan">
-        <p className="setting-copy">HPP dihitung dari cost bahan yang tercatat saat transaksi. Harga pasar bahan dapat berubah melalui Master Bahan Baku. Transaksi lama dengan HPP Rp0 akan tetap ditandai sebagai HPP belum tercatat agar laporan tidak memberikan angka laba yang menyesatkan.</p>
+        <p className="setting-copy">HPP dihitung dari cost bahan yang tercatat saat transaksi. Acuan saat ini mengikuti tabel HPP terbaru, termasuk minyak goreng. Harga pasar bahan dapat berubah melalui Master Bahan Baku. Transaksi lama dengan HPP Rp0 akan tetap ditandai sebagai HPP belum tercatat agar laporan tidak memberikan angka laba yang menyesatkan.</p>
       </Panel>
     </div>
   </section>;
