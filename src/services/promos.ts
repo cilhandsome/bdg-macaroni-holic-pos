@@ -1,4 +1,6 @@
-import type { CartItem, PromoRecord } from "../db/db";
+import type { PromoRecord } from "../db/db";
+
+type PromoCartItem = { id: string; price: number; qty: number };
 
 export type PromoCalculation = {
   eligible: boolean;
@@ -21,7 +23,7 @@ export function isPromoDateValid(promo: PromoRecord, now = new Date()) {
 
 export function calculatePromoDiscount(
   promo: PromoRecord,
-  cart: CartItem[],
+  cart: PromoCartItem[],
   subtotal: number,
   outletId: string,
   now = new Date()
