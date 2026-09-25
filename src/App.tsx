@@ -344,7 +344,7 @@ export default function App(){
   async function checkout(){
     if(!context||!cart.length)return;
     const activePromo=selectedPromo;
-    const activePromoCalc=activePromo ? calculatePromoDiscount(activePromo,cart,cartSubtotal,context.outlet.id) : {eligible:true,discount:0,base:0};
+    const activePromoCalc=activePromo ? calculatePromoDiscount(activePromo,cart,cartSubtotal,context.outlet.id) : {eligible:true,discount:0,base:0,reason:""};
     if(activePromo && !activePromoCalc.eligible){setError(activePromoCalc.reason||"Promo tidak lagi memenuhi syarat.");return;}
     const finalDiscount=activePromoCalc.discount||0;
     const finalTotal=Math.max(cartSubtotal-finalDiscount,0);
