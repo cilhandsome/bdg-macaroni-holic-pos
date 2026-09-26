@@ -264,6 +264,26 @@ export async function seedDatabase(){
     await db.settings.put({key:catalogMigrationKey,value:"done"});
   }
 
+  const hppAlignmentKey = "hppAlignmentV1";
+  if ((await db.settings.get(hppAlignmentKey))?.value !== "done") {
+    const flour = await db.ingredients.get("ing-topping-crispy");
+    if (flour && Math.abs(flour.costPerUnit - 17) < 0.001) {
+      await db.ingredients.update(flour.id, {costPerUnit:21.25, updatedAt:now()});
+    }
+
+    const chili = await db.ingredients.get("ing-chili");
+    if (chili && Math.abs((chili.purchasePrice ?? 0) - 35000) < 0.001) {
+      await db.ingredients.update(chili.id, {purchasePrice:10500, packageSize:"300 g + 80 ml air", priceMode:"MARKET", updatedAt:now()});
+    }
+
+    const mayo = await db.ingredients.get("ing-mayo");
+    if (mayo && Math.abs((mayo.purchasePrice ?? 0) - 30000) < 0.001) {
+      await db.ingredients.update(mayo.id, {purchasePrice:9000, packageSize:"300 g + 80 ml air", priceMode:"MARKET", updatedAt:now()});
+    }
+
+    await db.settings.put({key:hppAlignmentKey,value:"done"});
+  }
+
   const stockReconcileKey = "stockReconcileV1";
   const stockReconciled = (await db.settings.get(stockReconcileKey))?.value === "done";
   if (!stockReconciled) {
