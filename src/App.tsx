@@ -312,6 +312,43 @@ export default function App(){
   const received=Number(cashReceived)||0; const change=Math.max(received-total,0);
   const availablePromos=promos.map(p=>({promo:p,calc:context?calculatePromoDiscount(p,cart,cartSubtotal,context.outlet.id):{eligible:false,discount:0,base:0}})).filter(x=>x.calc.eligible).sort((a,b)=>b.calc.discount-a.calc.discount);
 
+  function openItemDiscount(item:CartItem){
+    setItemDiscountId(item.id);
+    setItemDiscountForm({
+      category:item.discountCategory||"UMUM",
+      type:item.discountType||"PERCENT",
+      value:item.discountValue!=null?String(item.discountValue):""
+    });
+    setItemDiscountOpen(true);
+  }
+
+  function saveItemDiscount(){
+    if(!itemDiscountId) return;
+    const value=Math.max(0,Number(itemDiscountForm.value)||0);
+    if(itemDiscountForm.type==="PERCENT"&&value>100){
+      setError("Diskon per item maksimal 100%.");
+      return;
+    }
+    setCart(list=>list.map(item=>item.id===itemDiscountId
+      ? {...item,discountCategory:itemDiscountForm.category,discountType:value>0?itemDiscountForm.type:undefined,discountValue:value>0?value:undefined}
+      : item
+    ));
+    setItemDiscountOpen(false);
+    setNotice(value>0
+      ? "Potongan "+(itemDiscountForm.category==="KONSINYASI"?"konsinyasi":"diskon umum")+" diterapkan ke "+(selectedItemForDiscount?.name||"item")+"."
+      : "Potongan item dihapus.");
+  }
+
+  function clearItemDiscount(){
+    if(!itemDiscountId)return;
+    setCart(list=>list.map(item=>item.id===itemDiscountId
+      ? {...item,discountCategory:undefined,discountType:undefined,discountValue:undefined}
+      : item
+    ));
+    setItemDiscountOpen(false);
+    setNotice("Potongan item dihapus.");
+  }
+
   async function calculateSaleHpp(sale: SaleRecord){
     let cogs = 0;
     const updatedItems = Array.isArray(sale.items) ? sale.items.map(item => ({...item})) : [];
@@ -362,7 +399,9 @@ export default function App(){
     const activePromo=selectedPromo;
     const activePromoCalc=activePromo ? calculatePromoDiscount(activePromo,cart,cartSubtotal,context.outlet.id) : {eligible:true,discount:0,base:0,reason:""};
     if(activePromo && !activePromoCalc.eligible){setError(activePromoCalc.reason||"Promo tidak lagi memenuhi syarat.");return;}
-    const finalDiscount=activePromoCalc.discount||0;
+    const finalItemDiscount=itemDiscountTotal;
+    const finalPromoDiscount=activePromoCalc.discount||0;
+    const finalDiscount=finalItemDiscount+finalPromoDiscount;
     const finalTotal=Math.max(cartSubtotal-finalDiscount,0);
     const finalChange=Math.max(received-finalTotal,0);
     if(paymentMethod==="Cash"&&received<finalTotal){setError("Nominal pembayaran belum mencukupi.");return;}
@@ -438,6 +477,11 @@ export default function App(){
           price: i.price,
           qty: i.qty,
           cost: recipeCost(i.id),
+          discountCategory: i.discountCategory,
+          discountType: i.discountType,
+          discountValue: i.discountValue,
+          discountAmount: itemDiscountAmount(i),
+          netTotal: Math.max((Number(i.price)||0)*(Number(i.qty)||0)-itemDiscountAmount(i),0),
         })),
         createdAt,
         outletId: context.outlet.id,
