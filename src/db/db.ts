@@ -23,9 +23,11 @@ export type StockMovementRecord = {
   reason: string; referenceId?: string; createdAt: string;
 };
 export type PromoType = "PERCENT" | "NOMINAL";
+export type PromoCategory = "UMUM" | "KONSINYASI";
 export type PromoRecord = {
   id: string;
   code: string;
+  category?: PromoCategory;
   name: string;
   type: PromoType;
   value: number;
