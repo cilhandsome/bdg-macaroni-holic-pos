@@ -754,7 +754,7 @@ export default function App(){
       {error&&<div className="global-notice error">{error}<button onClick={()=>setError("")}>×</button></div>}
 
       {view==="dashboard"&&<Dashboard sales={todaySales} revenue={todayRevenue} cogs={todayCogs} expense={todayExpense} lowStock={lowStock}/>}
-      {view==="pos"&&<POS categories={availableCategories} category={category} setCategory={setCategory} products={filteredProducts} query={query} setQuery={setQuery} addCart={addCart} cart={cart} clearCart={()=>{setCart([]);setSelectedPromoId("");}} changeQty={changeQty} total={total} cartSubtotal={cartSubtotal} promo={selectedPromo} promoDiscount={promoDiscount} onPromo={()=>setPromoOpen(true)} onClearPromo={()=>setSelectedPromoId("")} orderType={orderType} setOrderType={setOrderType} tableNumber={tableNumber} setTableNumber={setTableNumber} onPay={()=>setPaymentOpen(true)}/>}
+      {view==="pos"&&<POS categories={availableCategories} category={category} setCategory={setCategory} products={filteredProducts} query={query} setQuery={setQuery} addCart={addCart} cart={cart} clearCart={()=>{setCart([]);setSelectedPromoId("");}} changeQty={changeQty} total={total} cartSubtotal={cartSubtotal} itemDiscountAmount={itemDiscountAmount} itemDiscountTotal={itemDiscountTotal} promo={selectedPromo} promoDiscount={promoDiscount} onPromo={()=>setPromoOpen(true)} onClearPromo={()=>setSelectedPromoId("")} onItemDiscount={openItemDiscount} orderType={orderType} setOrderType={setOrderType} tableNumber={tableNumber} setTableNumber={setTableNumber} onPay={()=>setPaymentOpen(true)}/>
       {view==="history"&&<History sales={sales} onOpen={setReceiptSale} onClear={()=>void clearTransactionHistory()}/>} 
       {view==="products"&&<Products products={products} recipes={recipes} form={productForm} setForm={setProductForm} onSave={()=>void saveProduct()} onSetupRecipe={(productId)=>{setRecipeForm(x=>({...x,productId}));setView("recipes");setNotice("Produk dipilih. Silakan tambahkan komponen resep.");}}/>}
       {view==="ingredients"&&<Ingredients ingredients={ingredients} lowStock={lowStock} form={ingredientForm} setForm={setIngredientForm} onSave={()=>void saveIngredient()} onEdit={editIngredient} onReset={resetIngredientForm}/>} 
@@ -769,8 +769,9 @@ export default function App(){
       {view==="users"&&<Users users={users} selected={selectedId} setSelected={setSelectedId} onEdit={()=>void editUser()} onActivate={(u)=>void activateUser(u)}/>}
       {view==="settings"&&<Settings onBackup={()=>void backup()} onRestore={(f)=>void restore(f)} onSync={()=>void doSync()}/>}
 
+      {itemDiscountOpen&&selectedItemForDiscount&&<Modal title="Potongan Per Item" onClose={()=>setItemDiscountOpen(false)}><div className="payment-total">{selectedItemForDiscount.name}</div><div className="form-grid"><label className="field">Kategori<select value={itemDiscountForm.category} onChange={e=>setItemDiscountForm({...itemDiscountForm,category:e.target.value as PromoCategory})}><option value="UMUM">Diskon Umum</option><option value="KONSINYASI">Konsinyasi</option></select></label><label className="field">Jenis<select value={itemDiscountForm.type} onChange={e=>setItemDiscountForm({...itemDiscountForm,type:e.target.value as "PERCENT"|"NOMINAL"})}><option value="PERCENT">Persentase (%)</option><option value="NOMINAL">Nominal (Rp)</option></select></label><Field label={itemDiscountForm.type==="PERCENT"?"Nilai (%)":"Nilai (Rp)"} type="number" value={itemDiscountForm.value} onChange={v=>setItemDiscountForm({...itemDiscountForm,value:v})}/></div><div className="menu-model-note">{itemDiscountForm.category==="KONSINYASI"?"Potongan item dicatat sebagai konsinyasi.":"Potongan khusus untuk item ini."}</div><div className="form-actions"><button className="secondary-button" onClick={clearItemDiscount}>Hapus Potongan</button><button className="primary-button" onClick={saveItemDiscount}>Terapkan ke Item</button></div></Modal>}
       {promoOpen&&<Modal title="Pilih Promo / Diskon" onClose={()=>setPromoOpen(false)}><div className="simple-table">{availablePromos.length?availablePromos.map(({promo,calc})=><button key={promo.id} type="button" className={selectedPromoId===promo.id?"table-row clickable selected-row":"table-row clickable"} onClick={()=>{setSelectedPromoId(promo.id);setPromoOpen(false);}}><div><strong>{promo.category==="KONSINYASI"?"🤝 Konsinyasi · ":"🎟️ "}{promo.code} · {promo.name}</strong><small>{promoRuleLabel(promo)} · hemat {rupiah(calc.discount)}{promo.productIds?.length?" · produk tertentu":""}</small></div><span>＋</span></button>):<Empty text="Belum ada promo yang memenuhi syarat transaksi ini."/>}</div></Modal>}
-      {paymentOpen&&<Modal title="Pembayaran" onClose={()=>setPaymentOpen(false)}><div className="payment-total">{rupiah(total)}</div>{selectedPromo&&<div className="promo-payment-summary"><strong>{selectedPromo.code}</strong><span>{selectedPromo.name} · Diskon {rupiah(promoDiscount)}</span></div>}<div className="payment-methods">{paymentMethods.map(m=><button key={m} className={paymentMethod===m?"method-button active":"method-button"} onClick={()=>setPaymentMethod(m)}>{m}</button>)}</div><div className="payment-breakdown"><div><span>Subtotal</span><strong>{rupiah(cartSubtotal)}</strong></div><div><span>Diskon</span><strong>{rupiah(promoDiscount)}</strong></div><div><span>Total</span><strong>{rupiah(total)}</strong></div></div>{paymentMethod==="Cash"&&<label className="field">Uang diterima<input inputMode="numeric" value={cashReceived} onChange={e=>setCashReceived(e.target.value.replace(/\\D/g,""))}/><span>Kembalian: <strong>{rupiah(change)}</strong></span></label>}<button className="confirm-pay" disabled={paymentMethod==="Cash"&&received<total} onClick={()=>void checkout()}>Konfirmasi Pembayaran</button></Modal>}
+      {paymentOpen&&<Modal title="Pembayaran" onClose={()=>setPaymentOpen(false)}><div className="payment-total">{rupiah(total)}</div>{(itemDiscountTotal>0||selectedPromo)&&<div className="promo-payment-summary"><strong>Potongan</strong><span>{itemDiscountTotal>0?"Item "+rupiah(itemDiscountTotal):""}{itemDiscountTotal>0&&selectedPromo?" + ":""}{selectedPromo?"Promo "+rupiah(promoDiscount):""}</span></div>}<div className="payment-methods">{paymentMethods.map(m=><button key={m} className={paymentMethod===m?"method-button active":"method-button"} onClick={()=>setPaymentMethod(m)}>{m}</button>)}</div><div className="payment-breakdown"><div><span>Subtotal</span><strong>{rupiah(cartSubtotal)}</strong></div><div><span>Diskon / Konsinyasi Item</span><strong>-{rupiah(itemDiscountTotal)}</strong></div><div><span>Promo Transaksi</span><strong>-{rupiah(promoDiscount)}</strong></div><div><span>Total</span><strong>{rupiah(total)}</strong></div></div>{paymentMethod==="Cash"&&<label className="field">Uang diterima<input inputMode="numeric" value={cashReceived} onChange={e=>setCashReceived(e.target.value.replace(/\\D/g,""))}/><span>Kembalian: <strong>{rupiah(change)}</strong></span></label>}<button className="confirm-pay" disabled={paymentMethod==="Cash"&&received<total} onClick={()=>void checkout()}>Konfirmasi Pembayaran</button></Modal>}
       {receiptSale&&<Receipt sale={receiptSale} onClose={()=>setReceiptSale(null)}/>}
     </main>
   </div>;
@@ -786,13 +787,14 @@ function Field({label,value,onChange,type="text"}:{label:string;value:string;onC
 function Modal({title,onClose,children}:{title:string;onClose:()=>void;children:ReactNode}){return <div className="modal-backdrop"><div className="modal-box"><div className="modal-head"><h3>{title}</h3><button onClick={onClose}>×</button></div>{children}</div></div>}
 
 function POS({
-  categories,category,setCategory,products,query,setQuery,addCart,cart,clearCart,changeQty,total,cartSubtotal,promo,promoDiscount,onPromo,onClearPromo,
+  categories,category,setCategory,products,query,setQuery,addCart,cart,clearCart,changeQty,total,cartSubtotal,itemDiscountAmount,itemDiscountTotal,promo,promoDiscount,onPromo,onClearPromo,onItemDiscount,
   orderType,setOrderType,tableNumber,setTableNumber,onPay
 }:{
   categories:Category[]; category:Category; setCategory:(x:Category)=>void;
   products:ProductRecord[]; query:string; setQuery:(x:string)=>void; addCart:(p:ProductRecord)=>void;
   cart:CartItem[]; clearCart:()=>void; changeQty:(id:string,d:number)=>void; total:number; cartSubtotal:number;
-  promo:PromoRecord|null; promoDiscount:number; onPromo:()=>void; onClearPromo:()=>void;
+  itemDiscountAmount:(item:CartItem)=>number; itemDiscountTotal:number;
+  promo:PromoRecord|null; promoDiscount:number; onPromo:()=>void; onClearPromo:()=>void; onItemDiscount:(item:CartItem)=>void;
   orderType:"Take Away"|"Dine In"; setOrderType:(x:"Take Away"|"Dine In")=>void;
   tableNumber:string; setTableNumber:(x:string)=>void; onPay:()=>void
 }){
@@ -873,7 +875,7 @@ function POS({
                     <button type="button" onClick={()=>changeQty(i.id,1)}>+</button>
                   </div>
                 </div>
-                <strong>{rupiah(price*qty)}</strong>
+                <div className="cart-item-total"><strong>{rupiah(Math.max(price*qty-itemDiscountAmount(i),0))}</strong><button type="button" className="mini-action" onClick={()=>onItemDiscount(i)}>{itemDiscountAmount(i)>0?(i.discountCategory==="KONSINYASI"?"🤝":"🏷️")+" "+rupiah(itemDiscountAmount(i)):"🏷️ Atur"}</button></div>
               </div>
             );
           })}
@@ -882,7 +884,8 @@ function POS({
         <div className="cart-summary">
           {safeCart.length>0&&<>{promo?<div className="promo-applied"><div><strong>🎟️ {promo.code}</strong><small>{promo.name}</small></div><button type="button" onClick={onClearPromo}>×</button></div>:<button type="button" className="secondary-button wide" onClick={onPromo}>🎟️ Pilih Promo / Diskon</button>}</>}
           <div><span>Subtotal</span><strong>{rupiah(Number(cartSubtotal)||0)}</strong></div>
-          <div><span>Diskon</span><strong>{rupiah(Number(promoDiscount)||0)}</strong></div>
+          {itemDiscountTotal>0&&<div><span>Diskon / Konsinyasi Item</span><strong>-{rupiah(Number(itemDiscountTotal)||0)}</strong></div>}
+          {promoDiscount>0&&<div><span>Promo Transaksi</span><strong>-{rupiah(Number(promoDiscount)||0)}</strong></div>}
           <div className="summary-total"><span>Total</span><strong>{rupiah(Number(total)||0)}</strong></div>
           <button type="button" className="pay-button" disabled={safeCart.length===0} onClick={onPay}>Bayar · {rupiah(Number(total)||0)}</button>
         </div>
