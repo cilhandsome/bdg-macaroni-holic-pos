@@ -1419,8 +1419,8 @@ function Receipt({sale,onClose}:{sale:SaleRecord;onClose:()=>void}){
         <div className="receipt-meta"><span>Tanggal</span><strong>{sale.createdAt ? dateLabel(sale.createdAt) : "—"}</strong></div>
         <div className="receipt-divider"/>
         {items.map((i,index)=><div className="receipt-item" key={String(i.productId ?? index)}>
-          <div><strong>{i.name || "Produk"}</strong><span>{Number(i.qty)||0} × {rupiah(Number(i.price)||0)}</span></div>
-          <strong>{rupiah((Number(i.qty)||0)*(Number(i.price)||0))}</strong>
+          <div><strong>{i.name || "Produk"}</strong><span>{Number(i.qty)||0} × {rupiah(Number(i.price)||0)}</span>{Number(i.discountAmount)>0&&<small>{i.discountCategory==="KONSINYASI"?"🤝 Konsinyasi":"🏷️ Diskon Umum"} -{rupiah(Number(i.discountAmount)||0)}</small>}</div>
+          <strong>{rupiah(Number(i.netTotal) || Math.max((Number(i.qty)||0)*(Number(i.price)||0)-(Number(i.discountAmount)||0),0))}</strong>
         </div>)}
         <div className="receipt-divider"/>
         <div className="receipt-meta"><span>Subtotal</span><strong>{rupiah(Number(sale.subtotal)||0)}</strong></div>
