@@ -47,7 +47,11 @@ export type SaleRecord = {
   paymentMethod: string; subtotal: number; discount: number; total: number; cashReceived: number;
   change: number; costOfGoods: number;
   promoId?: string; promoCode?: string; promoName?: string;
-  items: Array<{ productId: string; name: string; price: number; qty: number; cost: number }>;
+  items: Array<{
+    productId: string; name: string; price: number; qty: number; cost: number;
+    discountCategory?: PromoCategory; discountType?: PromoType; discountValue?: number;
+    discountAmount?: number; netTotal?: number;
+  }>;
   createdAt: string; outletId: string; userId: string; synced: boolean;
 };
 export type ShiftRecord = {
