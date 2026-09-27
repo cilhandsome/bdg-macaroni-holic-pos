@@ -12,7 +12,12 @@ import { calculatePromoDiscount, promoRuleLabel } from "./services/promos";
 
 type View = "dashboard" | "pos" | "history" | "products" | "ingredients" | "recipes" | "purchases" | "stock" | "expenses" | "shift" | "reports" | "promos" | "outlets" | "users" | "settings";
 type Category = "Semua" | "Macaroni" | "Snack" | "Drink" | "Topping";
-type CartItem = ProductRecord & { qty: number };
+type CartItem = ProductRecord & {
+  qty: number;
+  discountCategory?: PromoCategory;
+  discountType?: "PERCENT" | "NOMINAL";
+  discountValue?: number;
+};
 type Role = UserRecord["role"];
 
 const roleViews: Record<Role, View[]> = {
@@ -137,8 +142,10 @@ export default function App(){
 
   const [category,setCategory]=useState<Category>("Semua"); const [query,setQuery]=useState("");
   const [cart,setCart]=useState<CartItem[]>([]); const [orderType,setOrderType]=useState<"Take Away"|"Dine In">("Take Away");
-  const [tableNumber,setTableNumber]=useState(""); const [paymentOpen,setPaymentOpen]=useState(false); const [promoOpen,setPromoOpen]=useState(false);
+  const [tableNumber,setTableNumber]=useState(""); const [paymentOpen,setPaymentOpen]=useState(false); const [promoOpen,setPromoOpen]=useState(false); const [itemDiscountOpen,setItemDiscountOpen]=useState(false);
   const [paymentMethod,setPaymentMethod]=useState("Cash"); const [cashReceived,setCashReceived]=useState(""); const [selectedPromoId,setSelectedPromoId]=useState("");
+  const [itemDiscountId,setItemDiscountId]=useState("");
+  const [itemDiscountForm,setItemDiscountForm]=useState({category:"UMUM" as PromoCategory,type:"PERCENT" as "PERCENT"|"NOMINAL",value:""});
   const [receiptSale,setReceiptSale]=useState<SaleRecord|null>(null);
 
   const [productForm,setProductForm]=useState({id:"",sku:"",name:"",size:"" as ""|"S"|"M"|"L",category:"Macaroni" as Exclude<Category,"Semua">,price:"",stock:"",productCost:"",trackStock:false});
@@ -287,12 +294,21 @@ export default function App(){
   function changeQty(id:string,delta:number){setCart(list=>list.map(x=>x.id===id?{...x,qty:x.qty+delta}:x).filter(x=>x.qty>0));}
 
   const cartSubtotal=cart.reduce((n,x)=>n+(Number(x.price)||0)*(Number(x.qty)||0),0);
+  const itemDiscountAmount=(item:CartItem)=>{
+    const base=Math.max(0,(Number(item.price)||0)*(Number(item.qty)||0));
+    const value=Math.max(0,Number(item.discountValue)||0);
+    if (!item.discountType || value<=0) return 0;
+    const discount=item.discountType==="PERCENT" ? base*(value/100) : value;
+    return Math.floor(Math.min(base,Math.max(0,discount)));
+  };
+  const itemDiscountTotal=cart.reduce((n,x)=>n+itemDiscountAmount(x),0);
+  const selectedItemForDiscount=cart.find(x=>x.id===itemDiscountId)??null;
   const selectedPromo=promos.find(p=>p.id===selectedPromoId)??null;
   const promoCalculation=selectedPromo&&context
     ? calculatePromoDiscount(selectedPromo,cart,cartSubtotal,context.outlet.id)
     : {eligible:false,discount:0,base:0,reason:""};
   const promoDiscount=promoCalculation.eligible ? promoCalculation.discount : 0;
-  const total=Math.max(cartSubtotal-promoDiscount,0);
+  const total=Math.max(cartSubtotal-itemDiscountTotal-promoDiscount,0);
   const received=Number(cashReceived)||0; const change=Math.max(received-total,0);
   const availablePromos=promos.map(p=>({promo:p,calc:context?calculatePromoDiscount(p,cart,cartSubtotal,context.outlet.id):{eligible:false,discount:0,base:0}})).filter(x=>x.calc.eligible).sort((a,b)=>b.calc.discount-a.calc.discount);
 
