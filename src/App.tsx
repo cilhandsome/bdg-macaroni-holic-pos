@@ -1282,6 +1282,19 @@ function Reports({sales,expenses,products,onRecalculateHpp}:{sales:SaleRecord[];
     promoMap.set(key,current);
   }
   const promoRows=[...promoMap.entries()].map(([code,row])=>({code,...row})).sort((a,b)=>b.discount-a.discount);
+  const itemAdjustmentMap=new Map<string,{category:string;count:number;discount:number}>();
+  for(const sale of filteredSales){
+    for(const item of (sale.items||[])){
+      const amount=Number((item as any).discountAmount)||0;
+      if(amount<=0) continue;
+      const category=(item as any).discountCategory==="KONSINYASI"?"KONSINYASI":"UMUM";
+      const current=itemAdjustmentMap.get(category)||{category,count:0,discount:0};
+      current.count+=(Number(item.qty)||0);
+      current.discount+=amount;
+      itemAdjustmentMap.set(category,current);
+    }
+  }
+  const itemAdjustmentRows=[...itemAdjustmentMap.values()].sort((a,b)=>b.discount-a.discount);
 
   const exportReport=()=>{
     const rows=[
@@ -1303,7 +1316,10 @@ function Reports({sales,expenses,products,onRecalculateHpp}:{sales:SaleRecord[];
       ...paymentRows.map(r=>[r.method,r.count,r.total]),
       [],
       ["Produk","Qty","Omzet","HPP Item","Laba Kotor"],
-      ...productRows.map(r=>[r.name,r.qty,r.revenue,r.cogs,r.revenue-r.cogs])
+      ...productRows.map(r=>[r.name,r.qty,r.revenue,r.cogs,r.revenue-r.cogs]),
+      [],
+      ["Kategori Potongan Item","Jumlah Item","Nilai Potongan"],
+      ...itemAdjustmentRows.map(r=>[r.category,r.count,r.discount])
     ];
     const csv=rows.map(row=>row.map(value=>`"${String(value??"").replaceAll('"','""')}"`).join(",")).join("\n");
     const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
@@ -1352,6 +1368,11 @@ function Reports({sales,expenses,products,onRecalculateHpp}:{sales:SaleRecord[];
       <Panel title="Promo Digunakan">
         <div className="simple-table">
           {promoRows.length?promoRows.map(r=><div className="table-row" key={r.code}><div><strong>{r.code}</strong><small>{r.name} · {r.count} transaksi</small></div><strong>{rupiah(r.discount)}</strong></div>):<Empty text="Belum ada promo digunakan pada periode ini."/>}
+        </div>
+      </Panel>
+      <Panel title="Potongan Per Item">
+        <div className="simple-table">
+          {itemAdjustmentRows.length?itemAdjustmentRows.map(r=><div className="table-row" key={r.category}><div><strong>{r.category==="KONSINYASI"?"🤝 Konsinyasi":"🏷️ Diskon Umum"}</strong><small>{r.count} item terpotong</small></div><strong>{rupiah(r.discount)}</strong></div>):<Empty text="Belum ada diskon atau konsinyasi per item pada periode ini."/>}
         </div>
       </Panel>
       <Panel title="Produk Terjual">
