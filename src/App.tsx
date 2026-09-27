@@ -3,7 +3,7 @@ import {
   db,
   type ProductRecord, type IngredientRecord, type RecipeRecord, type SaleRecord,
   type PurchaseRecord, type ExpenseRecord, type ShiftRecord, type SupplierRecord,
-  type OutletRecord, type UserRecord, type StockMovementRecord, type PromoRecord
+  type OutletRecord, type UserRecord, type StockMovementRecord, type PromoRecord, type PromoCategory
 } from "./db/db";
 import { getCurrentContext, loadActiveProducts, seedDatabase } from "./db/seed";
 import { cloudSyncConfigured, syncNow } from "./services/sync";
@@ -149,7 +149,7 @@ export default function App(){
   const [expenseForm,setExpenseForm]=useState({category:"Operasional",description:"",amount:"",paymentMethod:"Cash"});
   const [openingCash,setOpeningCash]=useState(""); const [closingCash,setClosingCash]=useState("");
   const [selectedId,setSelectedId]=useState("");
-  const [promoForm,setPromoForm]=useState({id:"",code:"",name:"",type:"PERCENT" as "PERCENT"|"NOMINAL",value:"10",minSubtotal:"0",maxDiscount:"",startDate:today(),endDate:today(),productId:"",maxUses:"",active:true});
+  const [promoForm,setPromoForm]=useState({id:"",code:"",name:"",category:"UMUM" as PromoCategory,type:"PERCENT" as "PERCENT"|"NOMINAL",value:"10",minSubtotal:"0",maxDiscount:"",startDate:today(),endDate:today(),productId:"",maxUses:"",active:true});
   const [syncing,setSyncing]=useState(false);
 
   const refresh=async()=>{
@@ -550,10 +550,10 @@ export default function App(){
     await refresh();setStockForm({ingredientId:"",type:"IN",quantity:"",reason:""});setNotice("Stok disesuaikan.");
   }
   function resetPromoForm(){
-    setPromoForm({id:"",code:"",name:"",type:"PERCENT",value:"10",minSubtotal:"0",maxDiscount:"",startDate:today(),endDate:today(),productId:"",maxUses:"",active:true});
+    setPromoForm({id:"",code:"",name:"",category:"UMUM",type:"PERCENT",value:"10",minSubtotal:"0",maxDiscount:"",startDate:today(),endDate:today(),productId:"",maxUses:"",active:true});
   }
   function editPromo(promo:PromoRecord){
-    setPromoForm({id:promo.id,code:promo.code,name:promo.name,type:promo.type,value:String(promo.value),minSubtotal:String(promo.minSubtotal||0),maxDiscount:promo.maxDiscount?String(promo.maxDiscount):"",startDate:promo.startDate,endDate:promo.endDate,productId:promo.productIds?.[0]||"",maxUses:promo.maxUses?String(promo.maxUses):"",active:promo.active});
+    setPromoForm({id:promo.id,code:promo.code,name:promo.name,category:promo.category||"UMUM",type:promo.type,value:String(promo.value),minSubtotal:String(promo.minSubtotal||0),maxDiscount:promo.maxDiscount?String(promo.maxDiscount):"",startDate:promo.startDate,endDate:promo.endDate,productId:promo.productIds?.[0]||"",maxUses:promo.maxUses?String(promo.maxUses):"",active:promo.active});
     setView("promos");
   }
   async function savePromo(){
@@ -570,7 +570,7 @@ export default function App(){
     if(promoForm.type==="PERCENT"&&value>100){setError("Diskon persen maksimal 100%.");return;}
     if(promos.some(p=>p.code===code&&p.id!==promoForm.id)){setError("Kode promo sudah digunakan.");return;}
     const now=new Date().toISOString();
-    const record:PromoRecord={id:promoForm.id||crypto.randomUUID(),code,name,type:promoForm.type,value,minSubtotal,maxDiscount:maxDiscount||undefined,startDate:promoForm.startDate,endDate:promoForm.endDate,productIds:promoForm.productId?[promoForm.productId]:[],outletIds:[],maxUses:maxUses||undefined,usedCount:promoForm.id?(promos.find(p=>p.id===promoForm.id)?.usedCount||0):0,active:promoForm.active,updatedAt:now};
+    const record:PromoRecord={id:promoForm.id||crypto.randomUUID(),code,name,category:promoForm.category as PromoCategory,type:promoForm.type,value,minSubtotal,maxDiscount:maxDiscount||undefined,startDate:promoForm.startDate,endDate:promoForm.endDate,productIds:promoForm.productId?[promoForm.productId]:[],outletIds:[],maxUses:maxUses||undefined,usedCount:promoForm.id?(promos.find(p=>p.id===promoForm.id)?.usedCount||0):0,active:promoForm.active,updatedAt:now};
     await db.promos.put(record);
     await db.auditLogs.add({id:crypto.randomUUID(),userId:context.user.id,action:"UPSERT",entity:"PROMO",entityId:record.id,detail:JSON.stringify(record),createdAt:now});
     await refresh();resetPromoForm();setNotice("Promo "+record.code+" tersimpan.");
@@ -709,7 +709,7 @@ export default function App(){
       {view==="users"&&<Users users={users} selected={selectedId} setSelected={setSelectedId} onEdit={()=>void editUser()} onActivate={(u)=>void activateUser(u)}/>}
       {view==="settings"&&<Settings onBackup={()=>void backup()} onRestore={(f)=>void restore(f)} onSync={()=>void doSync()}/>}
 
-      {promoOpen&&<Modal title="Pilih Promo / Diskon" onClose={()=>setPromoOpen(false)}><div className="simple-table">{availablePromos.length?availablePromos.map(({promo,calc})=><button key={promo.id} type="button" className={selectedPromoId===promo.id?"table-row clickable selected-row":"table-row clickable"} onClick={()=>{setSelectedPromoId(promo.id);setPromoOpen(false);}}><div><strong>{promo.code} · {promo.name}</strong><small>{promoRuleLabel(promo)} · hemat {rupiah(calc.discount)}{promo.productIds?.length?" · produk tertentu":""}</small></div><span>＋</span></button>):<Empty text="Belum ada promo yang memenuhi syarat transaksi ini."/>}</div></Modal>}
+      {promoOpen&&<Modal title="Pilih Promo / Diskon" onClose={()=>setPromoOpen(false)}><div className="simple-table">{availablePromos.length?availablePromos.map(({promo,calc})=><button key={promo.id} type="button" className={selectedPromoId===promo.id?"table-row clickable selected-row":"table-row clickable"} onClick={()=>{setSelectedPromoId(promo.id);setPromoOpen(false);}}><div><strong>{promo.category==="KONSINYASI"?"🤝 Konsinyasi · ":"🎟️ "}{promo.code} · {promo.name}</strong><small>{promoRuleLabel(promo)} · hemat {rupiah(calc.discount)}{promo.productIds?.length?" · produk tertentu":""}</small></div><span>＋</span></button>):<Empty text="Belum ada promo yang memenuhi syarat transaksi ini."/>}</div></Modal>}
       {paymentOpen&&<Modal title="Pembayaran" onClose={()=>setPaymentOpen(false)}><div className="payment-total">{rupiah(total)}</div>{selectedPromo&&<div className="promo-payment-summary"><strong>{selectedPromo.code}</strong><span>{selectedPromo.name} · Diskon {rupiah(promoDiscount)}</span></div>}<div className="payment-methods">{paymentMethods.map(m=><button key={m} className={paymentMethod===m?"method-button active":"method-button"} onClick={()=>setPaymentMethod(m)}>{m}</button>)}</div><div className="payment-breakdown"><div><span>Subtotal</span><strong>{rupiah(cartSubtotal)}</strong></div><div><span>Diskon</span><strong>{rupiah(promoDiscount)}</strong></div><div><span>Total</span><strong>{rupiah(total)}</strong></div></div>{paymentMethod==="Cash"&&<label className="field">Uang diterima<input inputMode="numeric" value={cashReceived} onChange={e=>setCashReceived(e.target.value.replace(/\\D/g,""))}/><span>Kembalian: <strong>{rupiah(change)}</strong></span></label>}<button className="confirm-pay" disabled={paymentMethod==="Cash"&&received<total} onClick={()=>void checkout()}>Konfirmasi Pembayaran</button></Modal>}
       {receiptSale&&<Receipt sale={receiptSale} onClose={()=>setReceiptSale(null)}/>}
     </main>
@@ -930,6 +930,12 @@ function Promos({promos,products,form,setForm,onSave,onReset,onEdit,onToggle}:{p
       <Panel title={editing?"Edit Promo":"Buat Promo"}>
         <div className="form-grid">
           <Field label="Kode promo" value={form.code} onChange={v=>setForm({...form,code:v})}/>
+          <label className="field">Kategori diskon
+            <select value={form.category||"UMUM"} onChange={e=>setForm({...form,category:e.target.value as PromoCategory})}>
+              <option value="UMUM">Diskon Umum</option>
+              <option value="KONSINYASI">Konsinyasi</option>
+            </select>
+          </label>
           <Field label="Nama promo" value={form.name} onChange={v=>setForm({...form,name:v})}/>
           <label className="field">Jenis
             <select value={form.type} onChange={e=>setForm({...form,type:e.target.value})}>
@@ -958,7 +964,7 @@ function Promos({promos,products,form,setForm,onSave,onReset,onEdit,onToggle}:{p
         <div className="simple-table">
           {promos.length?promos.slice().sort((a,b)=>Number(b.active)-Number(a.active)||b.updatedAt.localeCompare(a.updatedAt)).map(p=><div className="table-row" key={p.id}>
             <button className="table-row-main" type="button" onClick={()=>onEdit(p)}>
-              <div><strong>{p.code} · {p.name}</strong><small>{promoRuleLabel(p)} · {p.startDate} s/d {p.endDate}</small></div>
+              <div><strong>{p.category==="KONSINYASI"?"🤝 Konsinyasi · ":"🎟️ "}{p.code} · {p.name}</strong><small>{promoRuleLabel(p)} · {p.startDate} s/d {p.endDate}</small></div>
               <div><strong>{p.usedCount}{p.maxUses?"/"+p.maxUses:""}x</strong><small>{p.active?"Aktif":"Nonaktif"}</small></div>
             </button>
             <button className={p.active?"edit-row-button":"secondary-button"} type="button" onClick={()=>onToggle(p)}>{p.active?"Nonaktifkan":"Aktifkan"}</button>
