@@ -113,6 +113,10 @@ const allCategories: Exclude<Category, "Semua">[] = ["Macaroni", "Snack", "Drink
 const paymentMethods = ["Cash", "QRIS", "Debit", "Transfer", "Online"];
 const rupiah = (v: number) => new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(v);
 const today = () => new Date().toISOString().slice(0,10);
+const localDateTimeInput = (date = new Date()) => {
+  const pad = (n:number) => String(n).padStart(2,"0");
+  return date.getFullYear()+"-"+pad(date.getMonth()+1)+"-"+pad(date.getDate())+"T"+pad(date.getHours())+":"+pad(date.getMinutes());
+};
 const dateLabel = (v: string) => new Date(v).toLocaleString("id-ID");
 
 function downloadJson(filename:string,data:unknown){
@@ -144,6 +148,7 @@ export default function App(){
   const [cart,setCart]=useState<CartItem[]>([]); const [orderType,setOrderType]=useState<"Take Away"|"Dine In">("Take Away");
   const [tableNumber,setTableNumber]=useState(""); const [paymentOpen,setPaymentOpen]=useState(false); const [promoOpen,setPromoOpen]=useState(false); const [itemDiscountOpen,setItemDiscountOpen]=useState(false);
   const [paymentMethod,setPaymentMethod]=useState("Cash"); const [cashReceived,setCashReceived]=useState(""); const [selectedPromoId,setSelectedPromoId]=useState("");
+  const [transactionDateTime,setTransactionDateTime]=useState(localDateTimeInput());
   const [itemDiscountId,setItemDiscountId]=useState("");
   const [itemDiscountForm,setItemDiscountForm]=useState({category:"UMUM" as PromoCategory,type:"PERCENT" as "PERCENT"|"NOMINAL",value:""});
   const [receiptSale,setReceiptSale]=useState<SaleRecord|null>(null);
@@ -405,7 +410,11 @@ export default function App(){
     const finalTotal=Math.max(cartSubtotal-finalDiscount,0);
     const finalChange=Math.max(received-finalTotal,0);
     if(paymentMethod==="Cash"&&received<finalTotal){setError("Nominal pembayaran belum mencukupi.");return;}
-    const invoice="MH-"+today().replaceAll("-","")+"-"+String(Date.now()).slice(-5); const createdAt=new Date().toISOString();
+    const transactionDate=new Date(transactionDateTime);
+    if(Number.isNaN(transactionDate.getTime())){setError("Tanggal transaksi tidak valid.");return;}
+    if(transactionDate.getTime()>Date.now()){setError("Tanggal transaksi tidak boleh di masa depan.");return;}
+    const createdAt=transactionDate.toISOString();
+    const invoice="MH-"+createdAt.slice(0,10).replaceAll("-","")+"-"+String(Date.now()).slice(-5);
     try{
       let created:SaleRecord|null=null;
       const validated: Array<{ item: CartItem; recipe: RecipeRecord | undefined }> = [];
@@ -490,13 +499,24 @@ export default function App(){
       };
       await db.sales.add(created);
       await db.syncQueue.add({id:crypto.randomUUID(),tableName:"sales",recordId:created.id,createdAt,attempts:0,synced:false});
+      if(transactionDate.getTime() < Date.now()-60000){
+        await db.auditLogs.add({
+          id:crypto.randomUUID(),
+          userId:context.user.id,
+          action:"BACKDATED_SALE",
+          entity:"SALE",
+          entityId:created.id,
+          detail:JSON.stringify({invoiceNo:invoice,transactionAt:createdAt,recordedAt:new Date().toISOString()}),
+          createdAt:new Date().toISOString()
+        });
+      }
       if(activePromo){
         const usedPromo={...activePromo,usedCount:(activePromo.usedCount||0)+1,updatedAt:createdAt};
         await db.promos.put(usedPromo);
         await db.auditLogs.add({id:crypto.randomUUID(),userId:context.user.id,action:"UPSERT",entity:"PROMO",entityId:usedPromo.id,detail:JSON.stringify(usedPromo),createdAt});
         await db.auditLogs.add({id:crypto.randomUUID(),userId:context.user.id,action:"UPSERT",entity:"SALE_PROMO",entityId:created.id,detail:JSON.stringify({saleId:created.id,promoId:activePromo.id,promoCode:activePromo.code,promoName:activePromo.name}),createdAt});
       }
-      await refresh(); setReceiptSale(null); setCart([]); setSelectedPromoId(""); setCashReceived(""); setTableNumber(""); setPaymentOpen(false); setPromoOpen(false); setView("history"); setNotice(invoice+" tersimpan di perangkat.");
+      await refresh(); setReceiptSale(null); setCart([]); setSelectedPromoId(""); setCashReceived(""); setTableNumber(""); setTransactionDateTime(localDateTimeInput()); setPaymentOpen(false); setPromoOpen(false); setView("history"); setNotice(invoice+" tersimpan di perangkat.");
     }catch(e){setError(e instanceof Error?e.message:"Transaksi gagal.");}
   }
 
@@ -515,6 +535,7 @@ export default function App(){
     setContext(null);
     setCart([]);
     setSelectedPromoId("");
+    setTransactionDateTime(localDateTimeInput());
     setPaymentOpen(false);
     setPromoOpen(false);
     setReceiptSale(null);
@@ -771,7 +792,7 @@ export default function App(){
 
       {itemDiscountOpen&&selectedItemForDiscount&&<Modal title="Potongan Per Item" onClose={()=>setItemDiscountOpen(false)}><div className="payment-total">{selectedItemForDiscount.name}</div><div className="form-grid"><label className="field">Kategori<select value={itemDiscountForm.category} onChange={e=>setItemDiscountForm({...itemDiscountForm,category:e.target.value as PromoCategory})}><option value="UMUM">Diskon Umum</option><option value="KONSINYASI">Konsinyasi</option></select></label><label className="field">Jenis<select value={itemDiscountForm.type} onChange={e=>setItemDiscountForm({...itemDiscountForm,type:e.target.value as "PERCENT"|"NOMINAL"})}><option value="PERCENT">Persentase (%)</option><option value="NOMINAL">Nominal (Rp)</option></select></label><Field label={itemDiscountForm.type==="PERCENT"?"Nilai (%)":"Nilai (Rp)"} type="number" value={itemDiscountForm.value} onChange={v=>setItemDiscountForm({...itemDiscountForm,value:v})}/></div><div className="menu-model-note">{itemDiscountForm.category==="KONSINYASI"?"Potongan item dicatat sebagai konsinyasi.":"Potongan khusus untuk item ini."}</div><div className="form-actions"><button className="secondary-button" onClick={clearItemDiscount}>Hapus Potongan</button><button className="primary-button" onClick={saveItemDiscount}>Terapkan ke Item</button></div></Modal>}
       {promoOpen&&<Modal title="Pilih Promo / Diskon" onClose={()=>setPromoOpen(false)}><div className="simple-table">{availablePromos.length?availablePromos.map(({promo,calc})=><button key={promo.id} type="button" className={selectedPromoId===promo.id?"table-row clickable selected-row":"table-row clickable"} onClick={()=>{setSelectedPromoId(promo.id);setPromoOpen(false);}}><div><strong>{promo.category==="KONSINYASI"?"🤝 Konsinyasi · ":"🎟️ "}{promo.code} · {promo.name}</strong><small>{promoRuleLabel(promo)} · hemat {rupiah(calc.discount)}{promo.productIds?.length?" · produk tertentu":""}</small></div><span>＋</span></button>):<Empty text="Belum ada promo yang memenuhi syarat transaksi ini."/>}</div></Modal>}
-      {paymentOpen&&<Modal title="Pembayaran" onClose={()=>setPaymentOpen(false)}><div className="payment-total">{rupiah(total)}</div>{(itemDiscountTotal>0||selectedPromo)&&<div className="promo-payment-summary"><strong>Potongan</strong><span>{itemDiscountTotal>0?"Item "+rupiah(itemDiscountTotal):""}{itemDiscountTotal>0&&selectedPromo?" + ":""}{selectedPromo?"Promo "+rupiah(promoDiscount):""}</span></div>}<div className="payment-methods">{paymentMethods.map(m=><button key={m} className={paymentMethod===m?"method-button active":"method-button"} onClick={()=>setPaymentMethod(m)}>{m}</button>)}</div><div className="payment-breakdown"><div><span>Subtotal</span><strong>{rupiah(cartSubtotal)}</strong></div><div><span>Diskon / Konsinyasi Item</span><strong>-{rupiah(itemDiscountTotal)}</strong></div><div><span>Promo Transaksi</span><strong>-{rupiah(promoDiscount)}</strong></div><div><span>Total</span><strong>{rupiah(total)}</strong></div></div>{paymentMethod==="Cash"&&<label className="field">Uang diterima<input inputMode="numeric" value={cashReceived} onChange={e=>setCashReceived(e.target.value.replace(/\\D/g,""))}/><span>Kembalian: <strong>{rupiah(change)}</strong></span></label>}<button className="confirm-pay" disabled={paymentMethod==="Cash"&&received<total} onClick={()=>void checkout()}>Konfirmasi Pembayaran</button></Modal>}
+      {paymentOpen&&<Modal title="Pembayaran" onClose={()=>setPaymentOpen(false)}><div className="payment-total">{rupiah(total)}</div><label className="field">Tanggal & waktu transaksi<input type="datetime-local" value={transactionDateTime} max={localDateTimeInput()} onChange={e=>setTransactionDateTime(e.target.value)}/><small>Gunakan tanggal mundur untuk transaksi yang terlewat dicatat. Laporan dan riwayat akan mengikuti tanggal ini.</small></label>{(itemDiscountTotal>0||selectedPromo)&&<div className="promo-payment-summary"><strong>Potongan</strong><span>{itemDiscountTotal>0?"Item "+rupiah(itemDiscountTotal):""}{itemDiscountTotal>0&&selectedPromo?" + ":""}{selectedPromo?"Promo "+rupiah(promoDiscount):""}</span></div>}<div className="payment-methods">{paymentMethods.map(m=><button key={m} className={paymentMethod===m?"method-button active":"method-button"} onClick={()=>setPaymentMethod(m)}>{m}</button>)}</div><div className="payment-breakdown"><div><span>Subtotal</span><strong>{rupiah(cartSubtotal)}</strong></div><div><span>Diskon / Konsinyasi Item</span><strong>-{rupiah(itemDiscountTotal)}</strong></div><div><span>Promo Transaksi</span><strong>-{rupiah(promoDiscount)}</strong></div><div><span>Total</span><strong>{rupiah(total)}</strong></div></div>{paymentMethod==="Cash"&&<label className="field">Uang diterima<input inputMode="numeric" value={cashReceived} onChange={e=>setCashReceived(e.target.value.replace(/\\D/g,""))}/><span>Kembalian: <strong>{rupiah(change)}</strong></span></label>}<button className="confirm-pay" disabled={paymentMethod==="Cash"&&received<total} onClick={()=>void checkout()}>Konfirmasi Pembayaran</button></Modal>}
       {receiptSale&&<Receipt sale={receiptSale} onClose={()=>setReceiptSale(null)}/>}
     </main>
   </div>;
